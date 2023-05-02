@@ -24,7 +24,13 @@ We are making this code available under the MIT license in the hope that it may 
 
 ## Building and running
 
-Clone the repo and `cd` to it, then run `swift run ModelGen -i <input> -o <outputDir>` with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/ModelGen ...`.
+Clone the repo and `cd` to it, then run 
+
+```
+swift run modelgen -i <input> -o <outputDir>
+``` 
+
+with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/modelgen ...`.
 
 We currently support running on macOS 13.
 

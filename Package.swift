@@ -6,6 +6,9 @@ import PackageDescription
 let package = Package(
     name: "ModelGen",
     platforms: [.macOS(.v13)],
+    products: [
+        .executable(name: "modelgen", targets: ["ModelGen"])
+    ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0"),
