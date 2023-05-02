@@ -9,6 +9,8 @@ extension Property {
         let rawType = rawSwiftType(for: modelName, propertyName)
 
         switch rawType {
+        case .anyCodable:
+            return SwiftType(name: "AnyCodable", isOptional: !required, isCustom: false, isArray: false, isAnyCodable: true)
         case .builtIn(let type):
             return SwiftType(name: type, isOptional: !required, isCustom: false, isArray: false)
         case .custom(let type):
@@ -18,7 +20,8 @@ extension Property {
         }
     }
 
-    enum Kind {
+    private enum Kind {
+        case anyCodable
         case builtIn(String)
         case custom(String)
         case customArray(String)
@@ -61,13 +64,15 @@ extension Property {
                         return .custom(type)
                     case .customArray(let type):
                         return .customArray(type)
+                    case .anyCodable:
+                        return .anyCodable
                     }
                 case .ref(let ref):
                     let refType = ref.swiftType()
                     return .builtIn("[String: \(refType.propertyType)]")
                 }
             } else {
-                return .builtIn("AnyCodable")
+                return .anyCodable
             }
 
         case "string":

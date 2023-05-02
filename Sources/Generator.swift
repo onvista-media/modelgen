@@ -5,14 +5,20 @@
 //
 
 final class Generator {
-    private(set) var buffer = ""
-    private var indent = 0
+    private let output = OutputBuffer()
     private let schemas: [String: Schema]
     private let info: Info
+    private let classSchemas: Set<String>
+    private var importAnyCodable = false
 
-    init(spec: OpenApiSpec) {
+    init(spec: OpenApiSpec, classSchemas: String? = nil) {
         self.schemas = spec.components.schemas
+        self.classSchemas = Set((classSchemas ?? "").components(separatedBy: ","))
         self.info = spec.info
+    }
+
+    var buffer: String {
+        output.buffer
     }
 
     func generate(modelName: String, skipHeader: Bool = false) {
@@ -20,8 +26,7 @@ final class Generator {
             fatalError("\(modelName): schema not found")
         }
 
-        buffer = ""
-        indent = 0
+        output.reset()
 
         if !skipHeader {
             generateFileHeader(modelName: modelName, schema: schema)
@@ -36,6 +41,11 @@ final class Generator {
             generateSimpleEnum(modelName: modelName, schema: schema)
         } else {
             fatalError("\(modelName): don't know how to handle this schema")
+        }
+
+        if importAnyCodable {
+            print("")
+            print("import AnyCodable")
         }
     }
 
@@ -76,14 +86,14 @@ final class Generator {
             switch refOrSchema {
             case .schema(let schema):
                 if addComment {
-                    print("// MARK: - \(modelName) properties")
+                    comment("MARK: - \(modelName) properties")
                 }
                 let properties = schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
                 generateProperties(properties)
             case .ref(let ref):
                 let refType = ref.swiftType()
                 if addComment {
-                    print(#"// MARK: - inherited properties from \#(refType.name)"#)
+                    comment(#"MARK: - inherited properties from \#(refType.name)"#)
                 }
                 guard let schema = schemas[refType.name] else {
                     fatalError("\(modelName): no schema for \(refType) found")
@@ -135,7 +145,8 @@ final class Generator {
     private func generateModelStruct(modelName: String, schema: Schema) {
         let properties = schema.swiftProperties(for: modelName)
 
-        block("public struct \(modelName): Codable") {
+        let type = classSchemas.contains(modelName) ? "final class" : "struct"
+        block("public \(type) \(modelName): Codable") {
             generateProperties(properties)
 
             // init method
@@ -176,6 +187,10 @@ final class Generator {
                     print("(LossyDecodableArray<\(type.name)>.self, forKey: .\(prop.name))\(optional).elements")
                 } else {
                     print("(\(type.name).self, forKey: .\(prop.name))")
+                }
+
+                if type.isAnyCodable {
+                    importAnyCodable = true
                 }
             }
         }
@@ -254,7 +269,7 @@ final class Generator {
                 block("public var \(prop.name): \(prop.type.propertyType)") {
                     print("switch self {")
                     for dc in discriminatorCases {
-                            print("case .\(dc.enumCase)(let obj): return obj.\(prop.name)")
+                        print("case .\(dc.enumCase)(let obj): return obj.\(prop.name)")
                     }
                     print("}")
                 }
@@ -310,7 +325,7 @@ final class Generator {
         for prop in properties {
             comment(prop.comment)
             if prop.deprecated {
-                print("// deprecated")
+                comment(" deprecated")
             }
             print("public let \(prop.name): \(prop.type.propertyType)")
             print("")
@@ -338,38 +353,23 @@ final class Generator {
         }
         return nil
     }
+}
 
-    // MARK: - output buffer
-    private func print(_ string: String, terminator: String = "\n") {
-        let doIndent = !string.isEmpty && buffer.last == "\n"
-        let pad = String(repeating: "    ", count: doIndent ? indent : 0)
-        buffer += pad + string + terminator
+// MARK: - output buffer
+extension Generator {
+    private func print(_ str: String, terminator: String = "\n") {
+        output.print(str, terminator: terminator)
     }
 
-    private func indent(_ closure: () -> Void) {
-        indent += 1
-        closure()
-        indent -= 1
+    private func indent(closure: () -> Void) {
+        output.indent(closure: closure)
     }
 
-    private func block(_ string: String? = nil, _ closure: () -> Void) {
-        if let string {
-            print(string + " ", terminator: "")
-        }
-        print("{")
-        indent {
-            closure()
-        }
-        print("}")
+    private func block(_ str: String? = nil, closure: () -> Void) {
+        output.block(str, closure: closure)
     }
 
-    private func comment(_ comment: String?) {
-        guard let comment else { return }
-
-        let lines = comment.components(separatedBy: "\n")
-        for line in lines {
-            print("// \(line)")
-        }
+    private func comment(_ str: String?) {
+        output.comment(str)
     }
-
 }

@@ -17,12 +17,15 @@ struct ModelGen: ParsableCommand {
     @Option(name: .shortAndLong, help: "name of the output directory")
     var output: String
 
+    @Option(name: .shortAndLong, help: "list of schemas that are generated as classes, not structs")
+    var classSchemas: String?
+
     mutating func validate() throws {
-        guard input != "" else {
+        guard !input.isEmpty else {
             throw ValidationError("input file must be specified")
         }
 
-        guard output != "" else {
+        guard !output.isEmpty else {
             throw ValidationError("output directory must be specified")
         }
     }
@@ -43,7 +46,7 @@ struct ModelGen: ParsableCommand {
 
         for name in spec.components.schemas.keys {
             print(name)
-            let generator = Generator(spec: spec)
+            let generator = Generator(spec: spec, classSchemas: classSchemas)
             generator.generate(modelName: name)
 
             let data = generator.buffer.data(using: .utf8)!

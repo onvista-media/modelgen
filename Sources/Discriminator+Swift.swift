@@ -16,8 +16,6 @@ extension Discriminator {
             .sorted(by: { $0.key < $1.key })
             .map {
                 let model = $1.components(separatedBy: "/").last!
-//                let type = SwiftType(name: model, isOptional: false, isCustom: true, isArray: false)
-//                return SwiftProperty(name: $0.snakeCased(), type: type)
                 return DiscriminatorCase(enumCase: $0.snakeCased(), mappedModel: model, rawString: $0)
             }
     }

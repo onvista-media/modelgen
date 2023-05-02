@@ -35,12 +35,14 @@ struct SwiftType {
     let isOptional: Bool
     let isCustom: Bool
     let isArray: Bool
+    let isAnyCodable: Bool
 
-    init(name: String, isOptional: Bool, isCustom: Bool, isArray: Bool) {
+    init(name: String, isOptional: Bool, isCustom: Bool, isArray: Bool, isAnyCodable: Bool = false) {
         self.name = SwiftKeywords.safe(name)
         self.isOptional = isOptional
         self.isCustom = isCustom
         self.isArray = isArray
+        self.isAnyCodable = isAnyCodable
     }
 
     var propertyType: String {

@@ -5,7 +5,7 @@
 //
 
 import XCTest
-@testable import ModelGen
+@testable import modelgen
 
 final class PODTest: XCTestCase {
     private let spec = """

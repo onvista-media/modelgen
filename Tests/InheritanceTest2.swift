@@ -5,7 +5,7 @@
 //
 
 import XCTest
-@testable import ModelGen
+@testable import modelgen
 
 // test inheritance with a string as the discriminator
 
@@ -130,4 +130,3 @@ extension Dog: AnimalProtocol {}
         XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expectedDog)
     }
 }
-

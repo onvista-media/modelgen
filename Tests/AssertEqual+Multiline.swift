@@ -15,7 +15,7 @@ func XCTAssertEqual(
     if text == reference {
         return
     }
-    
+
     let textLines = text.split(separator: "\n", omittingEmptySubsequences: false)
     let referenceLines = reference.split(separator: "\n", omittingEmptySubsequences: false)
     let (diffLine, str1, str2) = firstDiff(textLines, referenceLines)
@@ -28,7 +28,7 @@ func XCTAssertEqual(
         line: line)
 }
 
-fileprivate func firstDiff(_ text: [String.SubSequence], _ reference: [String.SubSequence]) -> (Int, String.SubSequence, String.SubSequence) {
+private func firstDiff(_ text: [String.SubSequence], _ reference: [String.SubSequence]) -> (Int, String.SubSequence, String.SubSequence) {
     for line in 0..<max(text.count, reference.count) {
         let s1 = text[safe: line]
         let s2 = reference[safe: line]
