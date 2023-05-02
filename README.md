@@ -27,10 +27,12 @@ We are making this code available under the MIT license in the hope that it may 
 Clone the repo and `cd` to it, then run 
 
 ```
-swift run modelgen -i <input> -o <outputDir>
+swift run modelgen -i <input> -o <outputDir> [-c classnames]
 ``` 
 
-with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/modelgen ...`.
+with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Then optional `-c classnames` argument can be used to pass a comma-separated list of schema names that should not be generated as `struct`s, but rather as `final class`es instead. Use this to avoid "struct has infinite size" errors when schemas contain each other recursively.
+
+Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/modelgen ...`.
 
 We currently support running on macOS 13.
 
