@@ -4,7 +4,7 @@ An OpenAPI model generator for Swift, written in Swift.
 
 ## Rationale
 
-At onvista media, we have been dissatisfied with the existing Swift generator for openapi specs for quite a while now and have finally taken the plunge to write our own version. This implementation is highly opinionated and specific to our particular needs and leaves out a bunch of features that openapi has, simply because we do not currently use them. We do not use a templating system like most other generators do, but generate the output models directly from the parsed schema.
+At [onvista media](https://onvista-media.de), we have been dissatisfied with the existing Swift generator for openapi specs for quite a while now and have finally taken the plunge to write our own version. This implementation is highly opinionated and specific to our particular needs and leaves out a bunch of features that openapi has, simply because we do not currently use them. We do not use a templating system like most other generators do, but generate the output models directly from the parsed schema.
 
 Supported features are:
 
@@ -24,7 +24,7 @@ We are making this code available under the MIT license in the hope that it may 
 
 ## Building and running
 
-Clone the repo and `cd` to it, then run `swift run modelgen -i <input> -o <outputDir>` with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/modelgen ...`.
+Clone the repo and `cd` to it, then run `swift run ModelGen -i <input> -o <outputDir>` with `input` being your openapi spec in JSON format, and `outputDir` the name of the directory where the generator will place its output files, one `.swift` file per schema. Alternatively, use [`mint`](https://github.com/yonaskolb/mint) to run: `mint run onvista-media/ModelGen ...`.
 
 We currently support running on macOS 13.
 
