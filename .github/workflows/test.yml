@@ -1,0 +1,23 @@
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_14.2.app/Contents/Developer
+
+name: Test
+jobs:
+  build:
+    name: Test
+    runs-on: macos-12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Build
+        run: swift build
+
+      - name: Run Tests
+        run: swift test
