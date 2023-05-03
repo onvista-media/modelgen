@@ -325,7 +325,7 @@ final class Generator {
         for prop in properties {
             comment(prop.comment)
             if prop.deprecated {
-                comment(" deprecated")
+                comment("deprecated")
             }
             print("public let \(prop.name): \(prop.type.propertyType)")
             print("")

@@ -97,24 +97,24 @@ final class InheritanceTest2: XCTestCase {
     """#
 
     private let expectedDog =
-#"""
-public struct Dog: Codable {
-    // MARK: - inherited properties from Animal
-    public let status: String
-
-    // MARK: - Dog properties
-    public let barks: Bool
-
-    public init(status: String, barks: Bool) {
+    #"""
+    public struct Dog: Codable {
         // MARK: - inherited properties from Animal
-        self.status = status
-        // MARK: - Dog properties
-        self.barks = barks
-    }
-}
+        public let status: String
 
-extension Dog: AnimalProtocol {}
-"""#
+        // MARK: - Dog properties
+        public let barks: Bool
+
+        public init(status: String, barks: Bool) {
+            // MARK: - inherited properties from Animal
+            self.status = status
+            // MARK: - Dog properties
+            self.barks = barks
+        }
+    }
+
+    extension Dog: AnimalProtocol {}
+    """#
 
     func testBaseClass() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
