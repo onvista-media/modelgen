@@ -17,7 +17,11 @@ extension String {
         return self.prefix(1).uppercased() + String(self.suffix(count - 1))
     }
 
-    func snakeCased() -> String {
+    // convert a SNAKE_CASED string into a camelCased version
+    // FOO -> foo
+    // Foo -> foo
+    // FOO_BAR -> fooBar
+    func camelCased() -> String {
         guard self.contains("_") else {
             if self.uppercased() == self {
                 return self.lowercased()
