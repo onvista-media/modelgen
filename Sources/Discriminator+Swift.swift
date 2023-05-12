@@ -16,7 +16,7 @@ extension Discriminator {
             .sorted(by: { $0.key < $1.key })
             .map {
                 let model = $1.components(separatedBy: "/").last!
-                return DiscriminatorCase(enumCase: $0.snakeCased(), mappedModel: model, rawString: $0)
+                return DiscriminatorCase(enumCase: $0.camelCased(), mappedModel: model, rawString: $0)
             }
     }
 }

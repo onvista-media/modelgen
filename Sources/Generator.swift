@@ -307,7 +307,7 @@ final class Generator {
     private func generateEnum(name: String, cases: [String]) {
         block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable") {
             for c in cases {
-                let name = c.snakeCased()
+                let name = c.camelCased()
                 if "0" ... "9" ~= name.prefix(1) {
                     print(#"case _\#(name) = "\#(c)""#)
                 } else {
