@@ -57,12 +57,15 @@ final class InheritanceTest2: XCTestCase {
     public enum Animal: Codable {
         case cat(Cat)
         case dog(Dog)
+        case animal(AnimalBase)
 
         public init(from decoder: Decoder) throws {
             if let obj = try? Cat(from: decoder), obj.status == "cat" {
                 self = .cat(obj)
             } else if let obj = try? Dog(from: decoder), obj.status == "dog" {
                 self = .dog(obj)
+            } else if let obj = try? AnimalBase(from: decoder), obj.status == "Animal" {
+                self = .animal(obj)
             } else {
                 enum DiscriminatorKeys: String, CodingKey {
                     case type = "status"
@@ -77,6 +80,7 @@ final class InheritanceTest2: XCTestCase {
             switch self {
             case .cat(let obj): try obj.encode(to: encoder)
             case .dog(let obj): try obj.encode(to: encoder)
+            case .animal(let obj): try obj.encode(to: encoder)
             }
         }
     }
@@ -90,10 +94,30 @@ final class InheritanceTest2: XCTestCase {
             switch self {
             case .cat(let obj): return obj.status
             case .dog(let obj): return obj.status
+            case .animal(let obj): return obj.status
             }
         }
 
     }
+
+    public struct AnimalBase: Codable {
+        public let status: String
+
+        public init(status: String) {
+            self.status = status
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case status = "status"
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.status = try container.decode(String.self, forKey: .status)
+        }
+    }
+
+    extension AnimalBase: AnimalProtocol {}
     """#
 
     private let expectedDog =
