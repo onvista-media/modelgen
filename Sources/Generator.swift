@@ -202,7 +202,6 @@ final class Generator {
             fatalError("\(modelName) has no discriminator")
         }
 
-        let discriminatorCases = discriminator.swiftCases
         let properties = schema.swiftProperties(for: modelName)
         let discriminatorType = schema.properties?[discriminator.propertyName]
 
@@ -215,6 +214,19 @@ final class Generator {
             discriminatorIsString = true
         case .none:
             fatalError("\(modelName): unknown discriminator type")
+        }
+
+        var createBaseType = false
+        let discriminatorCases: [DiscriminatorCase]
+        if discriminatorIsString {
+            var cases = discriminator.swiftCases
+            if !cases.contains(where: { $0.mappedModel == modelName}) {
+                cases.append(DiscriminatorCase(enumCase: modelName.camelCased(), mappedModel: "\(modelName)Base", rawString: modelName))
+                createBaseType = true
+            }
+            discriminatorCases = cases
+        } else {
+            discriminatorCases = discriminator.swiftCases
         }
 
         block("public enum \(modelName): Codable") {
@@ -275,6 +287,13 @@ final class Generator {
                 }
                 print("")
             }
+        }
+
+        if createBaseType {
+            print("")
+            generateModelStruct(modelName: "\(modelName)Base", schema: schema)
+            print("")
+            print("extension \(modelName)Base: \(modelName)Protocol {}")
         }
     }
 

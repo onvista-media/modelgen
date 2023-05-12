@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.2"
+    static let version = "v0.1.3"
 
     @Option(name: .shortAndLong, help: "name of the input file")
     var input: String
