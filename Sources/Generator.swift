@@ -132,6 +132,29 @@ final class Generator {
                     generateAssignments($0)
                 }
             }
+
+            // codingkeys
+            print("")
+            block("enum CodingKeys: String, CodingKey") {
+                generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+                    generateCodingKeyCases($0)
+                }
+            }
+
+            // init(from: Decoder)
+            print("")
+            block("public init(from decoder: Decoder) throws") {
+                print("let container = try decoder.container(keyedBy: CodingKeys.self)")
+                generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+                    generateInitFromDecoderAssignments($0)
+                }
+            }
+
+            for refOrSchema in allOf {
+                if case .schema(let schema) = refOrSchema {
+                    generateTypeEnums(schema: schema)
+                }
+            }
         }
 
         if let ref = getRef(from: allOf) {
@@ -168,30 +191,38 @@ final class Generator {
 
     private func generateCodingKeys(_ props: [SwiftProperty]) {
         block("enum CodingKeys: String, CodingKey") {
-            for prop in props {
-                print(#"case \#(prop.name) = "\#(prop.specName)""#)
-            }
+            generateCodingKeyCases(props)
+        }
+    }
+
+    private func generateCodingKeyCases(_ props: [SwiftProperty]) {
+        for prop in props {
+            print(#"case \#(prop.name) = "\#(prop.specName)""#)
         }
     }
 
     private func generateInitFromDecoder(_ props: [SwiftProperty]) {
         block("public init(from decoder: Decoder) throws") {
             print("let container = try decoder.container(keyedBy: CodingKeys.self)")
-            for prop in props {
-                let type = prop.type
-                let decodeFun = type.isOptional ? "decodeIfPresent" : "decode"
-                print("self.\(prop.name) = try container.\(decodeFun)", terminator: "")
+            generateInitFromDecoderAssignments(props)
+        }
+    }
 
-                if type.isArray && type.isCustom {
-                    let optional = type.isOptional ? "?" : ""
-                    print("(LossyDecodableArray<\(type.name)>.self, forKey: .\(prop.name))\(optional).elements")
-                } else {
-                    print("(\(type.name).self, forKey: .\(prop.name))")
-                }
+    private func generateInitFromDecoderAssignments(_ props: [SwiftProperty]) {
+        for prop in props {
+            let type = prop.type
+            let decodeFun = type.isOptional ? "decodeIfPresent" : "decode"
+            print("self.\(prop.name) = try container.\(decodeFun)", terminator: "")
 
-                if type.isAnyCodable {
-                    importAnyCodable = true
-                }
+            if type.isArray && type.isCustom {
+                let optional = type.isOptional ? "?" : ""
+                print("(LossyDecodableArray<\(type.name)>.self, forKey: .\(prop.name))\(optional).elements")
+            } else {
+                print("(\(type.name).self, forKey: .\(prop.name))")
+            }
+
+            if type.isAnyCodable {
+                importAnyCodable = true
             }
         }
     }

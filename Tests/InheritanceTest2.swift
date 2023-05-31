@@ -43,6 +43,16 @@ final class InheritanceTest2: XCTestCase {
                           "properties" : {
                             "barks" : {
                               "type" : "boolean"
+                            },
+                            "array" : {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/Foo"
+                              }
+                            },
+                            "foobar" : {
+                              "type" : "string",
+                              "enum" : [ "foo", "bar", "baz" ]
                             }
                           }
                         }
@@ -121,24 +131,54 @@ final class InheritanceTest2: XCTestCase {
     """#
 
     private let expectedDog =
-    #"""
-    public struct Dog: Codable {
+#"""
+public struct Dog: Codable {
+    // MARK: - inherited properties from Animal
+    public let status: String
+
+    // MARK: - Dog properties
+    public let array: [Foo]?
+
+    public let barks: Bool
+
+    public let foobar: Foobar?
+
+    public init(status: String, array: [Foo]?, barks: Bool, foobar: Foobar?) {
         // MARK: - inherited properties from Animal
-        public let status: String
-
+        self.status = status
         // MARK: - Dog properties
-        public let barks: Bool
-
-        public init(status: String, barks: Bool) {
-            // MARK: - inherited properties from Animal
-            self.status = status
-            // MARK: - Dog properties
-            self.barks = barks
-        }
+        self.array = array
+        self.barks = barks
+        self.foobar = foobar
     }
 
-    extension Dog: AnimalProtocol {}
-    """#
+    enum CodingKeys: String, CodingKey {
+        case status = "status"
+        case array = "array"
+        case barks = "barks"
+        case foobar = "foobar"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.status = try container.decode(String.self, forKey: .status)
+        self.array = try container.decodeIfPresent(LossyDecodableArray<Foo>.self, forKey: .array)?.elements
+        self.barks = try container.decode(Bool.self, forKey: .barks)
+        self.foobar = try container.decodeIfPresent(Foobar.self, forKey: .foobar)
+    }
+
+    public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
+        case foo = "foo"
+        case bar = "bar"
+        case baz = "baz"
+
+        case _unknownCase
+        public static let unknownCase = Self._unknownCase
+    }
+}
+
+extension Dog: AnimalProtocol {}
+"""#
 
     func testBaseClass() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)

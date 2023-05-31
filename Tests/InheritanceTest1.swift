@@ -111,6 +111,17 @@ public struct Dog: Codable {
         // MARK: - Dog properties
         self.barks = barks
     }
+
+    enum CodingKeys: String, CodingKey {
+        case status = "status"
+        case barks = "barks"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.status = try container.decode(AnimalType.self, forKey: .status)
+        self.barks = try container.decode(Bool.self, forKey: .barks)
+    }
 }
 
 extension Dog: AnimalProtocol {}
