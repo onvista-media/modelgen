@@ -12,10 +12,10 @@ struct ModelGen: ParsableCommand {
     static let version = "v0.1.4"
 
     @Option(name: .shortAndLong, help: "name of the input file")
-    var input: String
+    var input: String = "/Users/gereon/Developer/onvista/modelgen/swagger.json"
 
     @Option(name: .shortAndLong, help: "name of the output directory")
-    var output: String
+    var output: String = "/Users/gereon/Developer/onvista/modelgen/output"
 
     @Option(name: .shortAndLong, help: "list of schemas that are generated as classes, not structs")
     var classSchemas: String?
@@ -44,14 +44,23 @@ struct ModelGen: ParsableCommand {
             try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
         }
 
-        for name in spec.components.schemas.keys {
-            print(name)
+        for (path, requests) in spec.paths.filter({ $0.key == "/v1/portfolios/{idPortfolio}" }) {
+            print("---------")
+            print(path)
             let generator = Generator(spec: spec, classSchemas: classSchemas)
-            generator.generate(modelName: name)
+            generator.generate(path: path, requests: requests)
 
-            let data = generator.buffer.data(using: .utf8)!
-            let url = URL(fileURLWithPath: "\(output)/\(name).swift")
-            try data.write(to: url, options: .atomic)
+            print(generator.buffer)
         }
+
+//        for name in spec.components.schemas.keys {
+//            print(name)
+//            let generator = Generator(spec: spec, classSchemas: classSchemas)
+//            generator.generate(modelName: name)
+//
+//            let data = generator.buffer.data(using: .utf8)!
+//            let url = URL(fileURLWithPath: "\(output)/\(name).swift")
+//            try data.write(to: url, options: .atomic)
+//        }
     }
 }

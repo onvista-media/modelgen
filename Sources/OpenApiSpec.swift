@@ -7,10 +7,40 @@
 struct OpenApiSpec: Decodable {
     let components: Components
     let info: Info
+    let paths: [ String: [String: Request] ]
 }
 
 struct Info: Decodable {
     let title: String
+}
+
+struct Request: Decodable {
+    let tags: [String]
+    let operationId: String
+    let parameters: [Parameter]?
+    let requestBody: RequestBody?
+    let responses: [String: Response]
+}
+
+struct RequestBody: Decodable {
+    let content: [String: SchemaContainer]
+}
+
+struct Parameter: Decodable {
+    let name: String
+    let `in`: String
+    let description: String?
+    let schema: Property
+    let required: Bool?
+}
+
+struct Response: Decodable {
+    let description: String?
+    let content: [String: SchemaContainer]?
+}
+
+struct SchemaContainer: Decodable {
+    let schema: RefOrSchema?
 }
 
 struct Components: Decodable {

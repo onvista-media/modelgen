@@ -29,6 +29,9 @@ extension Property {
 
     private func rawSwiftType(for modelName: String, _ propertyName: String) -> Kind {
         if enumCases != nil {
+            if type == "array" {
+                return .builtIn("[String]")
+            }
             assert(type == "string", "\(modelName): enum rawValues must be strings")
             return .builtIn(propertyName.uppercasedFirst())
         }

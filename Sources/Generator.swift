@@ -407,19 +407,19 @@ final class Generator {
 
 // MARK: - output buffer
 extension Generator {
-    private func print(_ str: String, terminator: String = "\n") {
+    func print(_ str: String, terminator: String = "\n") {
         output.print(str, terminator: terminator)
     }
 
-    private func indent(closure: () -> Void) {
+    func indent(closure: () -> Void) {
         output.indent(closure: closure)
     }
 
-    private func block(_ str: String? = nil, closure: () -> Void) {
+    func block(_ str: String? = nil, closure: () -> Void) {
         output.block(str, closure: closure)
     }
 
-    private func comment(_ str: String?) {
+    func comment(_ str: String?) {
         output.comment(str)
     }
 }
