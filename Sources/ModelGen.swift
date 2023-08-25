@@ -12,7 +12,7 @@ struct ModelGen: ParsableCommand {
     static let version = "v0.1.4"
 
     @Option(name: .shortAndLong, help: "name of the input file")
-    var input: String = "/Users/gereon/Developer/onvista/modelgen/swagger.json"
+    var input: String = "/Users/gereon/Developer/onvista/modelgen/swagger-bz.json"
 
     @Option(name: .shortAndLong, help: "name of the output directory")
     var output: String = "/Users/gereon/Developer/onvista/modelgen/output"
@@ -44,13 +44,16 @@ struct ModelGen: ParsableCommand {
             try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
         }
 
-        for (path, requests) in spec.paths.filter({ $0.key == "/v1/portfolios/{idPortfolio}" }) {
-            print("---------")
-            print(path)
-            let generator = Generator(spec: spec, classSchemas: classSchemas)
-            generator.generate(path: path, requests: requests)
+        let filter = "/v1/brokerize/order/{id}/cancel"
+        if let paths = spec.paths {
+            for (path, requests) in paths.filter({ $0.key == filter }) {
+                print("---------")
+                print(path)
+                let generator = Generator(spec: spec, classSchemas: classSchemas)
+                generator.generate(path: path, requests: requests)
 
-            print(generator.buffer)
+                print(generator.buffer)
+            }
         }
 
 //        for name in spec.components.schemas.keys {

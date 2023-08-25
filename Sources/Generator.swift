@@ -218,7 +218,7 @@ final class Generator {
                 let optional = type.isOptional ? "?" : ""
                 print("(LossyDecodableArray<\(type.name)>.self, forKey: .\(prop.name))\(optional).elements")
             } else {
-                print("(\(type.name).self, forKey: .\(prop.name))")
+                print("(\(type.baseType).self, forKey: .\(prop.name))")
             }
 
             if type.isAnyCodable {

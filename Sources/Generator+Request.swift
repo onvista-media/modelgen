@@ -15,9 +15,9 @@ extension Generator {
             let parameters = (request.parameters ?? [])
                 .sorted { $0.name.lowercased() < $1.name.lowercased() }
 
-            var bodyType: String?
+            var bodyType: SwiftType?
             if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
-                bodyType = ref.swiftType().name
+                bodyType = ref.swiftType()
             }
 
             block("public struct \(name)") {
@@ -26,17 +26,17 @@ extension Generator {
 
                 print("")
                 comment(method.uppercased() + ": " + request.operationId)
-                var params = parameters
-                    .map {
-                        parameterName(name: $0.name)
-                        + ": "
-                        + $0.schema.swiftType(for: "", $0.name, $0.required == true).propertyType
-                    }
-                if let bodyType {
-                    params.append("body: \(bodyType)")
+                var params = parameters.map {
+                    (parameterName(name: $0.name), $0.schema.swiftType(for: "", $0.name, $0.required == true))
                 }
 
-                block("public init(\(params.joined(separator: ", ")))") {
+                if let bodyType {
+                    params.append(("body", bodyType))
+                }
+
+                let initParameters = params.map { $0 + ": " + $1.propertyType }
+
+                block("public init(\(initParameters.joined(separator: ", ")))") {
                     print("let path = Self.path")
                     for param in parameters.filter({ $0.in == "path" }) {
                         indent {
@@ -49,12 +49,11 @@ extension Generator {
                     if !queryParams.isEmpty {
                         print("var queryItems = [URLQueryItem]()")
                         for param in queryParams {
-                            if param.required == true {
-                                print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: "\(\#(param.name))")"#)
+                            let type = param.schema.swiftType(for: "", param.name, param.required == true)
+                            if type.isArray {
+                                print(#"queryItems.append(contentsOf: \#(param.name).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
                             } else {
-                                block("if let \(param.name)") {
-                                    print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: "\(\#(param.name))")"#)
-                                }
+                                print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name))"#)
                             }
                         }
                         print("")
@@ -62,17 +61,14 @@ extension Generator {
 
                     let headerParams = parameters.filter({ $0.in == "header" })
                     if !headerParams.isEmpty {
-                        print("var headers = [String: String]()")
-                        for param in headerParams {
-                            let name = parameterName(name: param.name)
-                            if param.required == true {
-                                print(#"headers["\#(param.name)"] = "\(\#(name))""#)
-                            } else {
-                                block("if let \(name)") {
-                                    print(#"headers["\#(param.name)"] = "\(\#(name))""#)
-                                }
+                        print("let headers = [")
+                        indent {
+                            for param in headerParams {
+                                let name = parameterName(name: param.name)
+                                print(#""\#(param.name)": \#(name),"#)
                             }
                         }
+                        print("].compactMapValues { $0 }")
                         print("")
                     }
 
@@ -103,6 +99,8 @@ extension Generator {
                     for (code, response) in sortedResponses {
                         if let schema = response.content?["application/json"]?.schema, case .ref(let type) = schema {
                             print("case \(responseCase(for: code))(\(type.swiftType().name))")
+                        } else if code == "204" {
+                            print("case ok // 204 no content")
                         }
                     }
                 }
@@ -120,6 +118,8 @@ extension Generator {
                                     let type = type.swiftType().name
                                     let caseCode = Int(code) ?? 200
                                     print("case \(caseCode): return .\(responseCase(for: code))(try decoder.decode(\(type.self), from: data))")
+                                } else if code == "204" {
+                                    print("case 204: return .ok")
                                 }
                             }
                             print("default: return .undocumented(response.statusCode, data)")
@@ -142,13 +142,17 @@ extension Generator {
     private func responseCase(for code: String) -> String {
         switch code {
         case "200", "default": return "ok"
+        case "201": return "created"
         case "400": return "badRequest"
         case "401": return "unauthorized"
         case "404": return "notFound"
         case "403": return "forbidden"
         case "409": return "conflict"
+        case "422": return "unprocessable"
+        case "429": return "tooManyRequests"
         case "500": return "serverError"
         case "503": return "serviceUnavailable"
+        case "504": return "gatewayTimeout"
         default: return "_\(code)"
         }
     }

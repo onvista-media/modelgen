@@ -51,4 +51,10 @@ struct SwiftType {
         let optional = (isOptional ? "?" : "")
         return "\(openBracket)\(name)\(closeBracket)\(optional)"
     }
+
+    var baseType: String {
+        let openBracket = (isArray ? "[" : "")
+        let closeBracket = (isArray ? "]" : "")
+        return "\(openBracket)\(name)\(closeBracket)"
+    }
 }

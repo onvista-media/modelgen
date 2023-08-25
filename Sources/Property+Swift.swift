@@ -11,8 +11,8 @@ extension Property {
         switch rawType {
         case .anyCodable:
             return SwiftType(name: "AnyCodable", isOptional: !required, isCustom: false, isArray: false, isAnyCodable: true)
-        case .builtIn(let type):
-            return SwiftType(name: type, isOptional: !required, isCustom: false, isArray: false)
+        case .builtIn(let type, let isArray):
+            return SwiftType(name: type, isOptional: !required, isCustom: false, isArray: isArray)
         case .custom(let type):
             return SwiftType(name: type, isOptional: !required, isCustom: true, isArray: false)
         case .customArray(let type):
@@ -22,7 +22,7 @@ extension Property {
 
     private enum Kind {
         case anyCodable
-        case builtIn(String)
+        case builtIn(name: String, isArray: Bool)
         case custom(String)
         case customArray(String)
     }
@@ -30,10 +30,10 @@ extension Property {
     private func rawSwiftType(for modelName: String, _ propertyName: String) -> Kind {
         if enumCases != nil {
             if type == "array" {
-                return .builtIn("[String]")
+                return .builtIn(name: "[String]", isArray: true)
             }
             assert(type == "string", "\(modelName): enum rawValues must be strings")
-            return .builtIn(propertyName.uppercasedFirst())
+            return .builtIn(name: propertyName.uppercasedFirst(), isArray: false)
         }
 
         switch type {
@@ -41,7 +41,7 @@ extension Property {
             switch items {
             case .property(let prop):
                 let type = prop.swiftType(for: modelName, propertyName)
-                return .builtIn("[\(type.name)]")
+                return .builtIn(name: "\(type.name)", isArray: true)
             case .ref(let ref):
                 let type = ref.swiftType(isArray: true)
                 return .customArray(type.name)
@@ -51,7 +51,7 @@ extension Property {
 
         case "number":
             switch format {
-            case .none, "double": return .builtIn("Double")
+            case .none, "double": return .builtIn(name: "Double", isArray: false)
             default: fatalError("\(modelName): unknown format \(String(describing: format)) for number property")
             }
 
@@ -61,8 +61,8 @@ extension Property {
                 case .property(let prop):
                     let inner = prop.rawSwiftType(for: modelName, propertyName)
                     switch inner {
-                    case .builtIn(let type):
-                        return .builtIn("[String: \(type)]")
+                    case .builtIn(let type, _):
+                        return .builtIn(name: "[String: \(type)]", isArray: false)
                     case .custom(let type):
                         return .custom(type)
                     case .customArray(let type):
@@ -72,7 +72,7 @@ extension Property {
                     }
                 case .ref(let ref):
                     let refType = ref.swiftType()
-                    return .builtIn("[String: \(refType.propertyType)]")
+                    return .builtIn(name: "[String: \(refType.propertyType)]", isArray: false)
                 }
             } else {
                 return .anyCodable
@@ -80,19 +80,19 @@ extension Property {
 
         case "string":
             switch format {
-            case .none: return .builtIn("String")
-            case "date-time": return .builtIn("Date")
+            case .none: return .builtIn(name: "String", isArray: false)
+            case "date-time": return .builtIn(name: "Date", isArray: false)
             default: fatalError("\(modelName): unknown string format '\(format!)' for \(propertyName)")
             }
 
         case "boolean":
-            return .builtIn("Bool")
+            return .builtIn(name: "Bool", isArray: false)
 
         case "integer":
-            return .builtIn("Int")
+            return .builtIn(name: "Int", isArray: false)
 
         case "double":
-            return .builtIn("Double")
+            return .builtIn(name: "Double", isArray: false)
 
         default:
             fatalError("\(modelName): unknown type \(type)")

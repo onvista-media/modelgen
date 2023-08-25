@@ -7,7 +7,7 @@
 struct OpenApiSpec: Decodable {
     let components: Components
     let info: Info
-    let paths: [ String: [String: Request] ]
+    let paths: [ String: [String: Request] ]?
 }
 
 struct Info: Decodable {
