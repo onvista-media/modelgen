@@ -50,7 +50,7 @@ final class Generator {
     }
 
     // MARK: - file header
-    private func generateFileHeader(modelName: String, schema: Schema) {
+    func generateFileHeader(modelName: String, schema: Schema?, import: String? = nil) {
         print("""
         //
         // \(modelName).swift
@@ -62,9 +62,14 @@ final class Generator {
         //
 
         import Foundation
-
         """)
-        comment(schema.description)
+        if let `import` {
+            print("import \(`import`)")
+        }
+        print("")
+        if let descr = schema?.description {
+            comment(descr)
+        }
     }
 
     // MARK: - simple enum

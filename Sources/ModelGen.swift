@@ -44,6 +44,7 @@ struct ModelGen: ParsableCommand {
             try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
         }
 
+        // let filter = "/v1/brokerize/trade/prepare"
         let filter = "/v1/brokerize/order/{id}/cancel"
         if let paths = spec.paths {
             for (path, requests) in paths.filter({ $0.key == filter }) {
@@ -53,6 +54,12 @@ struct ModelGen: ParsableCommand {
                 generator.generate(path: path, requests: requests)
 
                 print(generator.buffer)
+
+//                let data = generator.buffer.data(using: .utf8)!
+//
+//                let name = requests.first?.value.operationId.uppercasedFirst() ?? ""
+//                let url = URL(fileURLWithPath: "\(output)/\(name).swift")
+//                try data.write(to: url, options: .atomic)
             }
         }
 
