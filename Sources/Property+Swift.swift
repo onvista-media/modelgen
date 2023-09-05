@@ -30,7 +30,7 @@ extension Property {
     private func rawSwiftType(for modelName: String, _ propertyName: String) -> Kind {
         if enumCases != nil {
             if type == "array" {
-                return .builtIn(name: "[String]", isArray: true)
+                return .builtIn(name: "String", isArray: true)
             }
             assert(type == "string", "\(modelName): enum rawValues must be strings")
             return .builtIn(name: propertyName.uppercasedFirst(), isArray: false)

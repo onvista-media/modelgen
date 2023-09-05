@@ -17,19 +17,24 @@ extension String {
         return self.prefix(1).uppercased() + String(self.suffix(count - 1))
     }
 
-    // convert a SNAKE_CASED string into a camelCased version
+    // convert a SNAKE_CASED Kebap-Cased or dotted string into a camelCased version
     // FOO -> foo
     // Foo -> foo
     // FOO_BAR -> fooBar
+    // Foo.Bar -> fooBar
     func camelCased() -> String {
-        guard self.contains("_") else {
-            if self.uppercased() == self {
-                return self.lowercased()
+        let str = self
+            .replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: "-", with: "_")
+
+        guard str.contains("_") else {
+            if str.uppercased() == str {
+                return str.lowercased()
             }
-            return self.lowercasedFirst()
+            return str.lowercasedFirst()
         }
 
-        return components(separatedBy: "_")
+        return str.components(separatedBy: "_")
             .map { $0.capitalized }
             .joined()
             .lowercasedFirst()

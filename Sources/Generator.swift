@@ -363,11 +363,7 @@ final class Generator {
         block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable") {
             for c in cases {
                 let name = c.camelCased()
-                if "0" ... "9" ~= name.prefix(1) {
-                    print(#"case _\#(name) = "\#(c)""#)
-                } else {
-                    print(#"case \#(SwiftKeywords.safe(name)) = "\#(c)""#)
-                }
+                print(#"case \#(SwiftKeywords.safe(name)) = "\#(c)""#)
             }
             print("")
             print("case _unknownCase")

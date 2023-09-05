@@ -6,7 +6,8 @@
 
 enum SwiftKeywords {
     static func safe(_ name: String) -> String {
-        keywords.contains(name) ? "_\(name)" : name
+        let startsWithDigit = "0" ... "9" ~= name.prefix(1)
+        return startsWithDigit || keywords.contains(name) ? "_\(name)" : name
     }
 
     private static let keywords = Set([

@@ -8,54 +8,55 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, requests: [String: Request]) {
-        for (method, request) in requests {
-            let name = request.operationId.uppercasedFirst() + "Request"
+    func generate(path: String, method: String, request: Request) {
+        let name = request.operationId.uppercasedFirst() + "Request"
 
-            generateFileHeader(modelName: name, schema: nil, import: "Dependencies")
+        generateFileHeader(modelName: name, schema: nil, import: "Dependencies")
 
-            let parameters = (request.parameters ?? [])
-                .sorted { $0.name.lowercased() < $1.name.lowercased() }
+        let parameters = (request.parameters ?? [])
+            .sorted { $0.name.lowercased() < $1.name.lowercased() }
 
-            block("public struct \(name)") {
-                print("static let path = \"\(path)\"")
-                print("public let urlRequest: URLRequest")
-                print(#"@Dependency(\.jsonEncoder) var jsonEncoder"#)
-                print(#"@Dependency(\.jsonDecoder) var jsonDecoder"#)
-                print(#"@Dependency(\.httpClient) var httpClient"#)
+        block("public struct \(name)") {
+            print("static let path = \"\(path)\"")
+            print("public let urlRequest: URLRequest")
+            print(#"@Dependency(\.jsonEncoder) var jsonEncoder"#)
+            print(#"@Dependency(\.jsonDecoder) var jsonDecoder"#)
+            print(#"@Dependency(\.httpClient) var httpClient"#)
 
-                var bodyType: SwiftType?
-                if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
-                    bodyType = ref.swiftType()
-                }
-                if bodyType != nil {
-                    print("private var body: \(bodyType!.propertyType)")
-                }
-
-                print("")
-                comment(method.uppercased() + ": " + request.operationId)
-
-                generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
-
-                print("")
-                generateResponseEnum(request: request)
-
-                print("")
-                generateExecuteRaw(request: request)
-
-                print("")
-                generateGet(request: request)
-
-                print("")
-                generateExecute(request: request)
+            var bodyType: SwiftType?
+            if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
+                bodyType = ref.swiftType()
             }
-        }
-    }
+            if bodyType != nil {
+                print("private var body: \(bodyType!.propertyType)")
+            }
 
-    private func parameterName(name: String) -> String {
-        name
-            .replacingOccurrences(of: "-", with: "_")
-            .lowercasedFirst()
+            print("")
+            for enumParam in (request.parameters ?? []).filter({ $0.schema.enumCases != nil }) {
+                block("public enum \(SwiftKeywords.safe(enumParam.name.uppercasedFirst())): String") {
+                    for enumCase in (enumParam.schema.enumCases ?? []) {
+                        print(#"case \#(SwiftKeywords.safe(enumCase))"#)
+                    }
+                }
+            }
+
+            print("")
+            comment(method.uppercased() + ": " + request.operationId)
+
+            generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
+
+            print("")
+            generateResponseEnum(request: request)
+
+            print("")
+            generateExecuteRaw(request: request)
+
+            print("")
+            generateGet(request: request)
+
+            print("")
+            generateExecute(request: request)
+        }
     }
 
     private func responseCase(for code: String) -> String {
@@ -68,6 +69,7 @@ extension Generator {
         case "403": return "forbidden"
         case "409": return "conflict"
         case "422": return "unprocessable"
+        case "428": return "preconditionRequired"
         case "429": return "tooManyRequests"
         case "500": return "serverError"
         case "503": return "serviceUnavailable"
@@ -78,14 +80,14 @@ extension Generator {
 
     private func generateInit(method: String, request: Request, parameters: [Parameter], bodyType: SwiftType?) {
         var params = parameters.map {
-            (parameterName(name: $0.name), $0.schema.swiftType(for: "", $0.name, $0.required == true))
+            ($0.name.camelCased(), $0.schema.swiftType(for: "", $0.name, $0.required == true))
         }
 
         if let bodyType {
             params.append(("body", bodyType))
         }
 
-        let initParameters = params.map { $0 + ": " + $1.propertyType }
+        let initParameters = params.map { $0.camelCased() + ": " + $1.propertyType }
 
         block("public init(\(initParameters.joined(separator: ", ")))") {
             print("let path = Self.path")
@@ -101,10 +103,12 @@ extension Generator {
                 print("var queryItems = [URLQueryItem?]()")
                 for param in queryParams {
                     let type = param.schema.swiftType(for: "", param.name, param.required == true)
-                    if type.isArray {
-                        print(#"queryItems.append(contentsOf: \#(param.name).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
+                    if type.isArray && type.isOptional {
+                        print(#"queryItems.append(contentsOf: (\#(param.name.camelCased()) ?? []).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
+                    } else if type.isArray {
+                        print(#"queryItems.append(contentsOf: \#(param.name.camelCased()).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
                     } else {
-                        print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name)))"#)
+                        print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name.camelCased())))"#)
                     }
                 }
                 print("")
@@ -115,8 +119,7 @@ extension Generator {
                 print("let headers = [")
                 indent {
                     for param in headerParams {
-                        let name = parameterName(name: param.name)
-                        print(#""\#(param.name)": \#(name),"#)
+                        print(#""\#(param.name)": \#(param.name.camelCased()),"#)
                     }
                 }
                 print("].compactMapValues { $0 }")
@@ -200,22 +203,38 @@ extension Generator {
         }
     }
 
-    private func generateGet(request: Request) {
+    private func successValues(for request: Request) -> (code: String, type: String, Response?) {
         var successType = "()"
-        let successResponse = request.responses["default"] ?? request.responses["200"]
+        var successCode = "200"
+        var successResponse = request.responses["default"] ?? request.responses["200"]
+        if successResponse == nil {
+            successResponse = request.responses["201"]
+            if successResponse != nil {
+                successCode = "201"
+            }
+        }
+
         if let schema = successResponse?.content?["application/json"]?.schema, case .ref(let type) = schema {
             successType = type.swiftType().name
         } else if successResponse != nil {
             successType = "Data"
         }
+
+        return (successCode, successType, successResponse)
+    }
+
+    private func generateGet(request: Request) {
+        let (successCode, successType, successResponse) = successValues(for: request)
+
         comment("return \(successType) or nil")
         block("public func get() async -> \(successType)?") {
             print("let (response, _, _) = await executeRaw()")
             block("switch response") {
+                let caseName = responseCase(for: successCode)
                 if successResponse == nil {
-                    print("case .ok: return ()")
+                    print("case .\(caseName): return ()")
                 } else {
-                    print("case .ok(let obj): return obj")
+                    print("case .\(caseName)(let obj): return obj")
                 }
                 print("default: return nil")
             }
@@ -223,15 +242,9 @@ extension Generator {
     }
 
     private func generateExecute(request: Request) {
-        var successType = "()"
-        let successResponse = request.responses["default"] ?? request.responses["200"]
-        if let schema = successResponse?.content?["application/json"]?.schema, case .ref(let type) = schema {
-            successType = type.swiftType().name
-        } else if successResponse != nil {
-            successType = "Data"
-        }
+        let (successCode, successType, successResponse) = successValues(for: request)
 
-        var errorType = ""
+        var errorType = "Error"
         let errorResponses = request.responses
             .filter {
                 $0.key != "default" && !$0.key.starts(with: "2")
@@ -246,7 +259,7 @@ extension Generator {
         block("public func execute() async -> Result<\(successType), APIError<\(errorType)>>") {
             print("let (response, data, urlResponse) = await executeRaw()")
 
-            block("guard data != nil, let urlResponse else") {
+            block("guard let data, let urlResponse else") {
                 block("if case .error(let error) = response") {
                     print("return .failure(.urlError(error))")
                 }
@@ -254,17 +267,18 @@ extension Generator {
             }
 
             block("switch response") {
+                let caseName = responseCase(for: successCode)
                 if successResponse == nil {
-                    print("case .ok: return .success(())")
+                    print("case .\(caseName): return .success(())")
                 } else {
-                    print("case .ok(let obj): return .success(obj)")
+                    print("case .\(caseName)(let obj): return .success(obj)")
                 }
                 print("case .error(let error): return .failure(.urlError(error))")
-                print("case .invalid(let error): return .failure(.invalid(error))")
+                print("case .invalid(let error): return .failure(.invalid(error, urlResponse, data))")
                 print("case .undocumented(_, let data): return .failure(.undocumented(urlResponse, data))")
                 for (code, response) in errorResponses {
                     if response.content?["application/json"]?.schema != nil {
-                        print("case .\(responseCase(for: code))(let errorObj): return .failure(.apiError(urlResponse, errorObj)) // x")
+                        print("case .\(responseCase(for: code))(let errorObj): return .failure(.apiError(urlResponse, errorObj))")
                     }
                 }
             }

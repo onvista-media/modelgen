@@ -12,15 +12,26 @@ struct ModelGen: ParsableCommand {
     static let version = "v0.1.4"
 
     @Option(name: .shortAndLong, help: "name of the input file")
-    var input: String = "/Users/gereon/Developer/onvista/modelgen/swagger-bz.json"
+    var input: String = "~/Developer/onvista/modelgen/swagger.json"
 
     @Option(name: .shortAndLong, help: "name of the output directory")
-    var output: String = "/Users/gereon/Developer/onvista/modelgen/output"
+    var output: String = "~/Developer/onvista/modelgen/output/Sources"
 
     @Option(name: .shortAndLong, help: "list of schemas that are generated as classes, not structs")
     var classSchemas: String?
 
+    @Option(name: [.long, .customShort("x")], help: "list of schemas/requests to ignore")
+    var exclude: String?
+
+    @Option(name: .long, help: "list of schemas/requests to generate")
+    var include: String?
+
+    @Option(name: .shortAndLong, help: "print to stdout instead of creating files")
+    var stdout = false
+
     mutating func validate() throws {
+        input = NSString(string: input).expandingTildeInPath
+        output = NSString(string: output).expandingTildeInPath
         guard !input.isEmpty else {
             throw ValidationError("input file must be specified")
         }
@@ -31,6 +42,16 @@ struct ModelGen: ParsableCommand {
     }
 
     mutating func run() throws {
+        let env = ProcessInfo().environment
+        if env["OS_ACTIVITY_DT_MODE"] == "YES" {
+            // running from Xcode
+            stdout = true
+            input = "/Users/gereonsteffens/Developer/onvista/modelgen/swagger.json"
+            output = "~/Developer/onvista/modelgen/output/Sources"
+            exclude = "WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,QueryWebsocket"
+            include = "QueryCalendarEvents"
+        }
+
         let data = try Data(contentsOf: URL(fileURLWithPath: input))
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: data)
 
@@ -47,31 +68,48 @@ struct ModelGen: ParsableCommand {
             }
         }
 
-        // let filter = "/v1/brokerize/export/renderGenericTable"
-        // let filter = "/v1/brokerize/order/{id}/cancel"
+        let excludes = (self.exclude ?? "").split(separator: ",").map { String($0) }
+        let includes = (self.include ?? "").split(separator: ",").map { String($0) }
+
         if let paths = spec.paths {
-            for (path, requests) in paths { // .filter({ $0.key == filter }) {
-                let generator = Generator(spec: spec, classSchemas: classSchemas)
-                generator.generate(path: path, requests: requests)
+            for (path, requests) in paths {
+                for (method, request) in requests {
+                    let name = request.operationId.uppercasedFirst()
+                    if excludes.contains(name) {
+                        continue
+                    }
+                    if includes.isEmpty || includes.contains(name) {
+                        let generator = Generator(spec: spec, classSchemas: classSchemas)
+                        generator.generate(path: path, method: method, request: request)
 
-//                print(generator.buffer)
-
-                let data = generator.buffer.data(using: .utf8)!
-
-                let name = requests.first?.value.operationId.uppercasedFirst() ?? ""
-                let url = URL(fileURLWithPath: "\(requestOutput)/\(name)Request.swift")
-                try data.write(to: url, options: .atomic)
+                        try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
+                    }
+                }
             }
         }
 
         for name in spec.components.schemas.keys {
-            print(name)
-            let generator = Generator(spec: spec, classSchemas: classSchemas)
-            generator.generate(modelName: name)
+            if excludes.contains(name) {
+                continue
+            }
+            if includes.isEmpty || includes.contains(name) {
+                let generator = Generator(spec: spec, classSchemas: classSchemas)
+                generator.generate(modelName: name)
 
-            let data = generator.buffer.data(using: .utf8)!
-            let url = URL(fileURLWithPath: "\(modelOutput)/\(name).swift")
+                try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
+            }
+        }
+    }
+
+    private func output(_ content: String, to name: String) throws {
+        if stdout {
+            print(content)
+        } else {
+            let data = content.data(using: .utf8)!
+
+            let url = URL(fileURLWithPath: name)
             try data.write(to: url, options: .atomic)
         }
+
     }
 }

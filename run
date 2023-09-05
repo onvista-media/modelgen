@@ -1,3 +1,5 @@
 rm -rf output/Sources/Requests output/Sources/Models
-swift run modelgen --input swagger.json --output output/Sources -c Plan
+
+EXCL="ReadPolimorphicList,WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,GetStandardRssFeed,GetNewsSitemap,GetNewsSitemap_1,QueryWebsocket,CreatePositionMiniChart"
+swift run modelgen --input swagger.json --output output/Sources -c Plan --exclude "$EXCL"
 (cd output; swift build)
