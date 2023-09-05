@@ -34,43 +34,44 @@ struct ModelGen: ParsableCommand {
         let data = try Data(contentsOf: URL(fileURLWithPath: input))
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: data)
 
-        var isDir: ObjCBool = false
-        let exists = FileManager.default.fileExists(atPath: output, isDirectory: &isDir)
-        if exists && !isDir.boolValue {
-            fatalError("output \(output) exists but is not a directory")
-        }
-
-        if !exists {
-            try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
-        }
-
-        // let filter = "/v1/brokerize/trade/prepare"
-        let filter = "/v1/brokerize/order/{id}/cancel"
-        if let paths = spec.paths {
-            for (path, requests) in paths.filter({ $0.key == filter }) {
-                print("---------")
-                print(path)
-                let generator = Generator(spec: spec, classSchemas: classSchemas)
-                generator.generate(path: path, requests: requests)
-
-                print(generator.buffer)
-
-//                let data = generator.buffer.data(using: .utf8)!
-//
-//                let name = requests.first?.value.operationId.uppercasedFirst() ?? ""
-//                let url = URL(fileURLWithPath: "\(output)/\(name).swift")
-//                try data.write(to: url, options: .atomic)
+        let modelOutput = output + "/Models"
+        let requestOutput = output + "/Requests"
+        for dir in [modelOutput, requestOutput] {
+            var isDir: ObjCBool = false
+            let exists = FileManager.default.fileExists(atPath: dir, isDirectory: &isDir)
+            if exists && !isDir.boolValue {
+                fatalError("output \(dir) exists but is not a directory")
+            }
+            if !exists {
+                try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
             }
         }
 
-//        for name in spec.components.schemas.keys {
-//            print(name)
-//            let generator = Generator(spec: spec, classSchemas: classSchemas)
-//            generator.generate(modelName: name)
-//
-//            let data = generator.buffer.data(using: .utf8)!
-//            let url = URL(fileURLWithPath: "\(output)/\(name).swift")
-//            try data.write(to: url, options: .atomic)
-//        }
+        // let filter = "/v1/brokerize/export/renderGenericTable"
+        // let filter = "/v1/brokerize/order/{id}/cancel"
+        if let paths = spec.paths {
+            for (path, requests) in paths { // .filter({ $0.key == filter }) {
+                let generator = Generator(spec: spec, classSchemas: classSchemas)
+                generator.generate(path: path, requests: requests)
+
+//                print(generator.buffer)
+
+                let data = generator.buffer.data(using: .utf8)!
+
+                let name = requests.first?.value.operationId.uppercasedFirst() ?? ""
+                let url = URL(fileURLWithPath: "\(requestOutput)/\(name)Request.swift")
+                try data.write(to: url, options: .atomic)
+            }
+        }
+
+        for name in spec.components.schemas.keys {
+            print(name)
+            let generator = Generator(spec: spec, classSchemas: classSchemas)
+            generator.generate(modelName: name)
+
+            let data = generator.buffer.data(using: .utf8)!
+            let url = URL(fileURLWithPath: "\(modelOutput)/\(name).swift")
+            try data.write(to: url, options: .atomic)
+        }
     }
 }

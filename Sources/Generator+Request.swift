@@ -24,10 +24,18 @@ extension Generator {
                 print(#"@Dependency(\.jsonDecoder) var jsonDecoder"#)
                 print(#"@Dependency(\.httpClient) var httpClient"#)
 
+                var bodyType: SwiftType?
+                if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
+                    bodyType = ref.swiftType()
+                }
+                if bodyType != nil {
+                    print("private var body: \(bodyType!.propertyType)")
+                }
+
                 print("")
                 comment(method.uppercased() + ": " + request.operationId)
 
-                generateInit(method: method, request: request, parameters: parameters)
+                generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
 
                 print("")
                 generateResponseEnum(request: request)
@@ -68,14 +76,9 @@ extension Generator {
         }
     }
 
-    private func generateInit(method: String, request: Request, parameters: [Parameter]) {
+    private func generateInit(method: String, request: Request, parameters: [Parameter], bodyType: SwiftType?) {
         var params = parameters.map {
             (parameterName(name: $0.name), $0.schema.swiftType(for: "", $0.name, $0.required == true))
-        }
-
-        var bodyType: SwiftType?
-        if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
-            bodyType = ref.swiftType()
         }
 
         if let bodyType {
@@ -95,13 +98,13 @@ extension Generator {
 
             let queryParams = parameters.filter { $0.in == "query" }
             if !queryParams.isEmpty {
-                print("var queryItems = [URLQueryItem]()")
+                print("var queryItems = [URLQueryItem?]()")
                 for param in queryParams {
                     let type = param.schema.swiftType(for: "", param.name, param.required == true)
                     if type.isArray {
                         print(#"queryItems.append(contentsOf: \#(param.name).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
                     } else {
-                        print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name))"#)
+                        print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name)))"#)
                     }
                 }
                 print("")
@@ -124,21 +127,21 @@ extension Generator {
             let keyword = queryParams.isEmpty ? "let" : "var"
             print(#"\#(keyword) components = URLComponents(string: path)!"#)
             if !queryParams.isEmpty {
-                print("components.queryItems = queryItems")
+                print("components.queryItems = queryItems.compactMap { $0 }")
             }
 
             comment("build request")
             print("var request = URLRequest(url: components.url!)")
             print(#"request.httpMethod = "\#(method.uppercased())""#)
-            if request.requestBody != nil {
-                print("request.httpBody = body")
-            }
             if !headerParams.isEmpty {
                 block("for (key, value) in headers") {
                     print("request.setValue(value, forHTTPHeaderField: key)")
                 }
             }
             print("self.urlRequest = request")
+            if bodyType != nil {
+                print("self.body = body")
+            }
         }
     }
 
@@ -149,6 +152,8 @@ extension Generator {
                     print("case \(responseCase(for: code))(\(type.swiftType().name))")
                 } else if code == "204" {
                     print("case ok // 204 no content")
+                } else if code == "200" {
+                    print("case ok(Data)")
                 }
             }
             print("")
@@ -181,10 +186,12 @@ extension Generator {
                             let caseCode = Int(code) ?? 200
                             print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
                         } else if code == "204" {
-                            print("case 204: return .ok")
+                            print("case 204: return (.ok, data, response)")
+                        } else if code == "200" {
+                            print("case 200: return (.ok(data), data, response)")
                         }
                     }
-                    print("default: return .undocumented(response.statusCode, data, reponse)")
+                    print("default: return (.undocumented(response.statusCode, data), data, response)")
                 }
             }
             block("catch") {
@@ -198,9 +205,11 @@ extension Generator {
         let successResponse = request.responses["default"] ?? request.responses["200"]
         if let schema = successResponse?.content?["application/json"]?.schema, case .ref(let type) = schema {
             successType = type.swiftType().name
+        } else if successResponse != nil {
+            successType = "Data"
         }
         comment("return \(successType) or nil")
-        block("public func get() -> \(successType)?") {
+        block("public func get() async -> \(successType)?") {
             print("let (response, _, _) = await executeRaw()")
             block("switch response") {
                 if successResponse == nil {
@@ -218,6 +227,8 @@ extension Generator {
         let successResponse = request.responses["default"] ?? request.responses["200"]
         if let schema = successResponse?.content?["application/json"]?.schema, case .ref(let type) = schema {
             successType = type.swiftType().name
+        } else if successResponse != nil {
+            successType = "Data"
         }
 
         var errorType = ""
@@ -252,8 +263,8 @@ extension Generator {
                 print("case .invalid(let error): return .failure(.invalid(error))")
                 print("case .undocumented(_, let data): return .failure(.undocumented(urlResponse, data))")
                 for (code, response) in errorResponses {
-                    if let schema = response.content?["application/json"]?.schema {
-                        print("case .\(responseCase(for: code))(let errorObj): return .failure(.apiError(urlResponse, errorObj)")
+                    if response.content?["application/json"]?.schema != nil {
+                        print("case .\(responseCase(for: code))(let errorObj): return .failure(.apiError(urlResponse, errorObj)) // x")
                     }
                 }
             }

@@ -1,0 +1,3 @@
+rm -rf output/Sources/Requests output/Sources/Models
+swift run modelgen --input swagger.json --output output/Sources -c Plan
+(cd output; swift build)
