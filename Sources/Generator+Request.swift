@@ -16,6 +16,7 @@ extension Generator {
         let parameters = (request.parameters ?? [])
             .sorted { $0.name.lowercased() < $1.name.lowercased() }
 
+        comment(request.operationId + ": " + method.uppercased() + " " + path)
         block("public struct \(name)") {
             print("static let path = \"\(path)\"")
             print("public let urlRequest: URLRequest")
@@ -28,7 +29,7 @@ extension Generator {
                 bodyType = ref.swiftType()
             }
             if bodyType != nil {
-                print("private var body: \(bodyType!.propertyType)")
+                print("private let body: \(bodyType!.propertyType)")
             }
 
             print("")
@@ -38,10 +39,8 @@ extension Generator {
                         print(#"case \#(SwiftKeywords.safe(enumCase))"#)
                     }
                 }
+                print("")
             }
-
-            print("")
-            comment(method.uppercased() + ": " + request.operationId)
 
             generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
 
@@ -49,13 +48,13 @@ extension Generator {
             generateResponseEnum(request: request)
 
             print("")
-            generateExecuteRaw(request: request)
+            generateExecute(request: request)
 
             print("")
             generateGet(request: request)
 
             print("")
-            generateExecute(request: request)
+            generateResult(request: request)
         }
     }
 
@@ -130,9 +129,10 @@ extension Generator {
             let keyword = queryParams.isEmpty ? "let" : "var"
             print(#"\#(keyword) components = URLComponents(string: path)!"#)
             if !queryParams.isEmpty {
-                print("components.queryItems = queryItems.compactMap { $0 }")
+                print("components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }")
             }
 
+            print("")
             comment("build request")
             print("var request = URLRequest(url: components.url!)")
             print(#"request.httpMethod = "\#(method.uppercased())""#)
@@ -141,6 +141,7 @@ extension Generator {
                     print("request.setValue(value, forHTTPHeaderField: key)")
                 }
             }
+            print("")
             print("self.urlRequest = request")
             if bodyType != nil {
                 print("self.body = body")
@@ -151,8 +152,14 @@ extension Generator {
     private func generateResponseEnum(request: Request) {
         block("public enum Response") {
             for (code, response) in request.sortedResponses {
-                if let schema = response.content?["application/json"]?.schema, case .ref(let type) = schema {
-                    print("case \(responseCase(for: code))(\(type.swiftType().name))")
+                if let schema = response.content?["application/json"]?.schema {
+                    switch schema {
+                    case .ref(let type):
+                        print("case \(responseCase(for: code))(\(type.swiftType().name))")
+                    case .schema(let schema):
+                        let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
+                        print("case \(responseCase(for: code))(\(prop.swiftType(for: "", "").name))")
+                    }
                 } else if code == "204" {
                     print("case ok // 204 no content")
                 } else if code == "200" {
@@ -166,15 +173,15 @@ extension Generator {
         }
     }
 
-    private func generateExecuteRaw(request: Request) {
+    private func generateExecute(request: Request) {
         comment("return decoded response, raw data and HTTP headers")
-        block("public func executeRaw() async -> (Response, Data?, HTTPURLResponse?)") {
+        block("public func execute() async -> (Response, Data?, HTTPURLResponse?)") {
             print("let data: Data")
             print("let response: HTTPURLResponse")
             block("do") {
                 if request.requestBody != nil {
                     print("var urlRequest = self.urlRequest")
-                    print("urlRequest.httpBody = try? jsonEncoder.encode(body)")
+                    print("urlRequest.httpBody = try jsonEncoder.encode(body)")
                 }
                 print("(data, response) = try await httpClient.execute(urlRequest: urlRequest)")
             }
@@ -184,10 +191,17 @@ extension Generator {
             block("do") {
                 block("switch response.statusCode") {
                     for (code, response) in request.sortedResponses {
-                        if let schema = response.content?["application/json"]?.schema, case .ref(let type) = schema {
-                            let type = type.swiftType().name
+                        if let schema = response.content?["application/json"]?.schema {
                             let caseCode = Int(code) ?? 200
-                            print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
+                            switch schema {
+                            case .ref(let type):
+                                let type = type.swiftType().name
+                                print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
+                            case .schema(let schema):
+                                let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
+                                let type = prop.swiftType(for: "", "").name
+                                print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
+                            }
                         } else if code == "204" {
                             print("case 204: return (.ok, data, response)")
                         } else if code == "200" {
@@ -214,9 +228,15 @@ extension Generator {
             }
         }
 
-        if let schema = successResponse?.content?["application/json"]?.schema, case .ref(let type) = schema {
-            successType = type.swiftType().name
-        } else if successResponse != nil {
+        if let schema = successResponse?.content?["application/json"]?.schema {
+            switch schema {
+            case .ref(let type):
+                successType = type.swiftType().name
+            case .schema(let schema):
+                let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
+                successType = prop.swiftType(for: "", "").name
+            }
+        } else {
             successType = "Data"
         }
 
@@ -228,7 +248,7 @@ extension Generator {
 
         comment("return \(successType) or nil")
         block("public func get() async -> \(successType)?") {
-            print("let (response, _, _) = await executeRaw()")
+            print("let (response, _, _) = await execute()")
             block("switch response") {
                 let caseName = responseCase(for: successCode)
                 if successResponse == nil {
@@ -241,23 +261,18 @@ extension Generator {
         }
     }
 
-    private func generateExecute(request: Request) {
+    private func generateResult(request: Request) {
         let (successCode, successType, successResponse) = successValues(for: request)
 
-        var errorType = "Error"
         let errorResponses = request.responses
             .filter {
                 $0.key != "default" && !$0.key.starts(with: "2")
             }
             .sorted(by: { $0.key < $1.key })
 
-        if let schema = errorResponses.first?.value.content?["application/json"]?.schema, case .ref(let type) = schema {
-            errorType = type.swiftType().name
-        }
-
         comment("return Result<\(successType), APIError>")
-        block("public func execute() async -> Result<\(successType), APIError<\(errorType)>>") {
-            print("let (response, data, urlResponse) = await executeRaw()")
+        block("public func result() async -> Result<\(successType), APIError>") {
+            print("let (response, data, urlResponse) = await execute()")
 
             block("guard let data, let urlResponse else") {
                 block("if case .error(let error) = response") {
