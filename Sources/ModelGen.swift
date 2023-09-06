@@ -46,10 +46,10 @@ struct ModelGen: ParsableCommand {
         if env["OS_ACTIVITY_DT_MODE"] == "YES" {
             // running from Xcode
             stdout = true
-            input = "/Users/gereon/Developer/onvista/modelgen/swagger.json"
+            input = "/Users/gereon/Developer/onvista/modelgen/swagger-bz.json"
             output = "~/Developer/onvista/modelgen/output/Sources"
             exclude = "WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,QueryWebsocket"
-            include = "DeleteMessageForUser"
+            include = "CreateCancelOrder"
         }
 
         let data = try Data(contentsOf: URL(fileURLWithPath: input))

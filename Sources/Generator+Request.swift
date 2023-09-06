@@ -60,7 +60,7 @@ extension Generator {
 
     private func responseCase(for code: String) -> String {
         switch code {
-        case "200", "default": return "ok"
+        case "200", "default", "204": return "ok"
         case "201": return "created"
         case "400": return "badRequest"
         case "401": return "unauthorized"
@@ -152,7 +152,9 @@ extension Generator {
     private func generateResponseEnum(request: Request) {
         block("public enum Response") {
             for (code, response) in request.sortedResponses {
-                if let schema = response.content?["application/json"]?.schema {
+                if code == "204" {
+                    print("case ok // 204 no content")
+                } else if let schema = response.content?["application/json"]?.schema {
                     switch schema {
                     case .ref(let type):
                         print("case \(responseCase(for: code))(\(type.swiftType().name))")
@@ -160,8 +162,6 @@ extension Generator {
                         let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
                         print("case \(responseCase(for: code))(\(prop.swiftType(for: "", "").name))")
                     }
-                } else if code == "204" {
-                    print("case ok // 204 no content")
                 } else if code == "200" {
                     print("case ok(Data)")
                 }
@@ -191,7 +191,9 @@ extension Generator {
             block("do") {
                 block("switch response.statusCode") {
                     for (code, response) in request.sortedResponses {
-                        if let schema = response.content?["application/json"]?.schema {
+                        if code == "204" {
+                            print("case 204: return (.ok, data, response)")
+                        } else if let schema = response.content?["application/json"]?.schema {
                             let caseCode = Int(code) ?? 200
                             switch schema {
                             case .ref(let type):
@@ -202,8 +204,6 @@ extension Generator {
                                 let type = prop.swiftType(for: "", "").name
                                 print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
                             }
-                        } else if code == "204" {
-                            print("case 204: return (.ok, data, response)")
                         } else if code == "200" {
                             print("case 200: return (.ok(data), data, response)")
                         }
@@ -222,22 +222,27 @@ extension Generator {
         var successCode = "200"
         var successResponse = request.responses["default"] ?? request.responses["200"]
         if successResponse == nil {
-            successResponse = request.responses["201"]
-            if successResponse != nil {
-                successCode = "201"
+            for code in ["201", "204"] {
+                successResponse = request.responses[code]
+                if successResponse != nil {
+                    successCode = code
+                    break
+                }
             }
         }
 
-        if let schema = successResponse?.content?["application/json"]?.schema {
-            switch schema {
-            case .ref(let type):
-                successType = type.swiftType().name
-            case .schema(let schema):
-                let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
-                successType = prop.swiftType(for: "", "").name
+        if successCode != "204" {
+            if let schema = successResponse?.content?["application/json"]?.schema {
+                switch schema {
+                case .ref(let type):
+                    successType = type.swiftType().name
+                case .schema(let schema):
+                    let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
+                    successType = prop.swiftType(for: "", "").name
+                }
+            } else {
+                successType = "Data"
             }
-        } else {
-            successType = "Data"
         }
 
         return (successCode, successType, successResponse)
@@ -254,7 +259,11 @@ extension Generator {
                 if successResponse == nil {
                     print("case .\(caseName): return ()")
                 } else {
-                    print("case .\(caseName)(let obj): return obj")
+                    if successCode == "204" {
+                        print("case .\(caseName): return ()")
+                    } else {
+                        print("case .\(caseName)(let obj): return obj")
+                    }
                 }
                 print("default: return nil")
             }
@@ -286,7 +295,11 @@ extension Generator {
                 if successResponse == nil {
                     print("case .\(caseName): return .success(())")
                 } else {
-                    print("case .\(caseName)(let obj): return .success(obj)")
+                    if successCode == "204" {
+                        print("case .\(caseName): return .success(())")
+                    } else {
+                        print("case .\(caseName)(let obj): return .success(obj)")
+                    }
                 }
                 print("case .error(let error): return .failure(.urlError(error))")
                 print("case .invalid(let error): return .failure(.invalid(error, urlResponse, data))")
