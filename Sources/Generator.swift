@@ -58,7 +58,7 @@ final class Generator {
         //
         // \(info.title)
         //
-        // swiftlint:disable:all
+        // swiftlint:disable all
         //
 
         import Foundation
