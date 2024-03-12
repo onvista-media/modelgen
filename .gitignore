@@ -4,3 +4,5 @@
 .netrc
 .vscode
 output
+swagger.json
+swagger-bz.json
