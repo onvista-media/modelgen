@@ -265,6 +265,9 @@ final class Generator {
             discriminatorCases = discriminator.swiftCases
         }
 
+        if schema.deprecated == true {
+            print("@available(*, deprecated)")
+        }
         block("public enum \(modelName): Codable") {
             // enum cases
             for dc in discriminatorCases {
@@ -360,8 +363,9 @@ final class Generator {
     }
 
     private func generateEnum(name: String, cases: [String]) {
+        let sortedCases = Set(cases).sorted(by: <)
         block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable") {
-            for c in cases {
+            for c in sortedCases {
                 let name = c.camelCased()
                 print(#"case \#(SwiftKeywords.safe(name)) = "\#(c)""#)
             }

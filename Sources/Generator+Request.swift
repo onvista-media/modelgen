@@ -16,7 +16,12 @@ extension Generator {
         let parameters = (request.parameters ?? [])
             .sorted { $0.name.lowercased() < $1.name.lowercased() }
 
-        comment(request.operationId + ": " + method.uppercased() + " " + path)
+        let (_, successType, _) = successValues(for: request)
+
+        comment(request.operationId + ": " + method.uppercased() + " " + path + " -> " + successType)
+        if request.deprecated == true {
+            print("@available(*, deprecated)")
+        }
         block("public struct \(name)") {
             print("static let path = \"\(path)\"")
             print("public let urlRequest: URLRequest")
@@ -35,7 +40,8 @@ extension Generator {
             print("")
             for enumParam in (request.parameters ?? []).filter({ $0.schema.enumCases != nil }) {
                 block("public enum \(SwiftKeywords.safe(enumParam.name.uppercasedFirst())): String") {
-                    for enumCase in (enumParam.schema.enumCases ?? []) {
+                    let sortedCases = Set(enumParam.schema.enumCases ?? []).sorted()
+                    for enumCase in sortedCases {
                         print(#"case \#(SwiftKeywords.safe(enumCase))"#)
                     }
                 }

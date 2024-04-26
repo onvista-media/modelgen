@@ -20,6 +20,7 @@ struct Request: Decodable {
     let parameters: [Parameter]?
     let requestBody: RequestBody?
     let responses: [String: Response]
+    let deprecated: Bool?
 }
 
 struct RequestBody: Decodable {
@@ -55,9 +56,10 @@ struct Schema: Decodable {
     let description: String?
     let discriminator: Discriminator?
     let enumCases: [String]?
+    let deprecated: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case type, properties, required, allOf, description, discriminator
+        case type, properties, required, allOf, description, discriminator, deprecated
         case enumCases = "enum"
     }
 }
