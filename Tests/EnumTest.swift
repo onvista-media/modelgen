@@ -26,8 +26,8 @@ final class EnumTest: XCTestCase {
 
     private let expected = """
     public enum Enum: String, Codable, CaseIterable, UnknownCaseRepresentable {
-        case case1 = "CASE1"
         case _2case = "2CASE"
+        case case1 = "CASE1"
         case _public = "PUBLIC"
         case testSnakeCase = "TEST_SNAKE_CASE"
 

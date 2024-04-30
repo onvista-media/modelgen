@@ -102,9 +102,9 @@ final class PODTest: XCTestCase {
             }
 
             public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
-                case foo = "foo"
                 case bar = "bar"
                 case baz = "baz"
+                case foo = "foo"
 
                 case _unknownCase
                 public static let unknownCase = Self._unknownCase
