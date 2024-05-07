@@ -8,13 +8,12 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request) {
+    func generate(path: String, method: String, request: Request, skipHeader: Bool = false) {
         let name = request.operationId.uppercasedFirst() + "Request"
 
-        generateFileHeader(modelName: name, schema: nil, import: "Dependencies")
-
-        let parameters = (request.parameters ?? [])
-            .sorted { $0.name.lowercased() < $1.name.lowercased() }
+        if !skipHeader {
+            generateFileHeader(modelName: name, schema: nil, import: "Dependencies")
+        }
 
         let (_, successType, _) = successValues(for: request)
 
@@ -33,8 +32,8 @@ extension Generator {
             if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
                 bodyType = ref.swiftType()
             }
-            if bodyType != nil {
-                print("private let body: \(bodyType!.propertyType)")
+            if let bodyType {
+                print("private let body: \(bodyType.propertyType)")
             }
 
             print("")
@@ -42,12 +41,14 @@ extension Generator {
                 block("public enum \(SwiftKeywords.safe(enumParam.name.uppercasedFirst())): String") {
                     let sortedCases = Set(enumParam.schema.enumCases ?? []).sorted()
                     for enumCase in sortedCases {
-                        print(#"case \#(SwiftKeywords.safe(enumCase))"#)
+                        print("case \(SwiftKeywords.safe(enumCase))")
                     }
                 }
                 print("")
             }
 
+            let parameters = (request.parameters ?? [])
+                .sorted { $0.name.lowercased() < $1.name.lowercased() }
             generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
 
             print("")
@@ -92,7 +93,8 @@ extension Generator {
             params.append(("body", bodyType))
         }
 
-        let initParameters = params.map { $0.camelCased() + ": " + $1.propertyType }
+        var initParameters = params.map { $0.camelCased() + ": " + $1.propertyType }
+        initParameters.append("useCache: Bool = true")
 
         block("public init(\(initParameters.joined(separator: ", ")))") {
             print("let path = Self.path")
@@ -147,6 +149,7 @@ extension Generator {
                     print("request.setValue(value, forHTTPHeaderField: key)")
                 }
             }
+            print("request.cachePolicy = useCache ? .useProtocolCachePolicy : .reloadIgnoringLocalAndRemoteCacheData")
             print("")
             print("self.urlRequest = request")
             if bodyType != nil {
