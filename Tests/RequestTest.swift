@@ -58,6 +58,7 @@ final class RequestTest: XCTestCase {
 // getStatus: GET /status -> Status
 public struct GetStatusRequest {
     static let path = "/status"
+    public let tags = ["/status"]
     public let urlRequest: URLRequest
     @Dependency(\.jsonEncoder) var jsonEncoder
     @Dependency(\.jsonDecoder) var jsonDecoder
@@ -90,7 +91,7 @@ public struct GetStatusRequest {
         let data: Data
         let response: HTTPURLResponse
         do {
-            (data, response) = try await httpClient.execute(urlRequest: urlRequest)
+            (data, response) = try await httpClient.execute(urlRequest: urlRequest, tags: tags)
         }
         catch {
             return (.error(error), nil, nil)

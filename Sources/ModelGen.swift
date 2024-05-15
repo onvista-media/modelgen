@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.7"
+    static let version = "v0.1.8"
 
     @Option(name: .shortAndLong, help: "name of the input file")
     var input: String = "~/Developer/onvista/modelgen/swagger.json"
@@ -46,7 +46,7 @@ struct ModelGen: ParsableCommand {
         if env["OS_ACTIVITY_DT_MODE"] == "YES" {
             // running from Xcode
             stdout = true
-            input = "/Users/gereon/Developer/onvista/modelgen/swagger-bz.json"
+            input = "~/Developer/onvista/modelgen/swagger-bz.json"
             output = "~/Developer/onvista/modelgen/output/Sources"
             exclude = "WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,QueryWebsocket"
             include = "CreateCancelOrder"

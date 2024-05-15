@@ -23,6 +23,7 @@ extension Generator {
         }
         block("public struct \(name)") {
             print("static let path = \"\(path)\"")
+            print("public let tags = \(request.tags)")
             print("public let urlRequest: URLRequest")
             print(#"@Dependency(\.jsonEncoder) var jsonEncoder"#)
             print(#"@Dependency(\.jsonDecoder) var jsonDecoder"#)
@@ -192,7 +193,7 @@ extension Generator {
                     print("var urlRequest = self.urlRequest")
                     print("urlRequest.httpBody = try jsonEncoder.encode(body)")
                 }
-                print("(data, response) = try await httpClient.execute(urlRequest: urlRequest)")
+                print("(data, response) = try await httpClient.execute(urlRequest: urlRequest, tags: tags)")
             }
             block("catch") {
                 print("return (.error(error), nil, nil)")
