@@ -1,12 +1,13 @@
 {
+  "originHash" : "3fe8e27ed5eaef1937b54d6d0f1e2690f0f6014e78cc25e5b9657cba0cd97545",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "fee6933f37fde9a5e12a1e4aeaa93fe60116ff2a",
-        "version" : "1.2.2"
+        "revision" : "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
+        "version" : "1.4.0"
       }
     },
     {
@@ -14,10 +15,10 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/lukepistrol/SwiftLintPlugin",
       "state" : {
-        "revision" : "f3586ed424d7bf5d94628332fbd0edebf1f5147f",
-        "version" : "0.2.3"
+        "revision" : "a0f7b12c7be228592d924f29f654ebbd924ac9c5",
+        "version" : "0.55.1"
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

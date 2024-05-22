@@ -9,7 +9,6 @@ disabled_rules:
  - line_length
  - function_body_length
  - file_length
- - identifier_name
  - force_cast
  - function_parameter_count
  - override_in_extension
@@ -56,7 +55,6 @@ conditional_returns_on_newline:
 identifier_name:
   min_length: 3
   excluded:
-  - id
-  - vc
-  - ip
-  - pi
+  - dc
+  - c
+  - in

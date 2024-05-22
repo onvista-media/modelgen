@@ -30,10 +30,10 @@ func XCTAssertEqual(
 
 private func firstDiff(_ text: [String.SubSequence], _ reference: [String.SubSequence]) -> (Int, String.SubSequence, String.SubSequence) {
     for line in 0..<max(text.count, reference.count) {
-        let s1 = text[safe: line]
-        let s2 = reference[safe: line]
+        let str1 = text[safe: line]
+        let str2 = reference[safe: line]
 
-        switch (s1, s2) {
+        switch (str1, str2) {
         case (.some(let str1), .some(let str2)):
             if str1 != str2 {
                 return (line, str1, str2)
