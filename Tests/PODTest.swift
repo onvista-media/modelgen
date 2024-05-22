@@ -109,6 +109,10 @@ final class PODTest: XCTestCase {
                 case _unknownCase
                 public static let unknownCase = Self._unknownCase
             }
+
+            public static func make(bool: Bool = false, double: Double? = nil, foobar: Foobar? = nil, ints: [Int] = [], lossy: [Foo]? = nil, ref: Object? = nil, string: String? = nil) -> Self {
+                self.init(bool: bool, double: double, foobar: foobar, ints: ints, lossy: lossy, ref: ref, string: string)
+            }
         }
         """
 
@@ -119,5 +123,4 @@ final class PODTest: XCTestCase {
         let output = String(generator.buffer.dropLast(1))
         XCTAssertEqual(output, multiline: expected)
     }
-
 }

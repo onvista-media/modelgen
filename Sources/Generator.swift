@@ -81,6 +81,26 @@ final class Generator {
         generateEnum(name: modelName, cases: cases)
     }
 
+    private func joinAllProperties(for modelName: String, allOf: [RefOrSchema], parentSchema: Schema) -> [SwiftProperty] {
+        var properties = [SwiftProperty]()
+        for refOrSchema in allOf {
+            switch refOrSchema {
+            case .schema(let schema):
+                properties.append(contentsOf: schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
+            case .ref(let ref):
+                let refType = ref.swiftType()
+                guard let schema = schemas[refType.name] else {
+                    fatalError("\(modelName): no schema for \(refType) found")
+                }
+                if schema.allOf != nil {
+                    fatalError("\(modelName): multi-level interitance is not supported")
+                }
+                properties.append(contentsOf: schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
+            }
+        }
+        return properties
+    }
+
     private func generateAllOf(for modelName: String,
                                allOf: [RefOrSchema],
                                addComment: Bool,
@@ -160,6 +180,9 @@ final class Generator {
                     generateTypeEnums(schema: schema)
                 }
             }
+
+            // static func make()
+            generateMakeMethod(joinAllProperties(for: modelName, allOf: allOf, parentSchema: schema))
         }
 
         if let ref = getRef(from: allOf) {
@@ -191,6 +214,25 @@ final class Generator {
             generateInitFromDecoder(properties)
 
             generateTypeEnums(schema: schema)
+
+            // make method
+            generateMakeMethod(properties)
+        }
+    }
+
+    private func generateMakeMethod(_ properties: [SwiftProperty]) {
+        print("")
+        print("public static func make(", terminator: "")
+        let params = properties
+            .map {
+                "\($0.name): \($0.type.propertyType) = \($0.type.defaultValue)"
+            }
+            .joined(separator: ", ")
+        print(params, terminator: "")
+        block(") -> Self") {
+            print("self.init(", terminator: "")
+            print(properties.map { "\($0.name): \($0.name)"}.joined(separator: ", "), terminator: "")
+            print(")")
         }
     }
 
@@ -303,6 +345,13 @@ final class Generator {
                     print("case .\(dc.enumCase)(let obj): try obj.encode(to: encoder)")
                 }
                 print("}")
+            }
+
+            // make method
+            print("")
+            block("public static func make() -> Self") {
+                guard let first = discriminatorCases.first else { return }
+                print(".\(first.enumCase)(.make())")
             }
         }
 

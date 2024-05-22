@@ -79,6 +79,10 @@ final class InheritanceTest1: XCTestCase {
             case .dog(let obj): try obj.encode(to: encoder)
             }
         }
+
+        public static func make() -> Self {
+            .cat(.make())
+        }
     }
 
     public protocol AnimalProtocol {
@@ -121,6 +125,10 @@ public struct Dog: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.status = try container.decode(AnimalType.self, forKey: .status)
         self.barks = try container.decode(Bool.self, forKey: .barks)
+    }
+
+    public static func make(status: AnimalType = .make(), barks: Bool = false) -> Self {
+        self.init(status: status, barks: barks)
     }
 }
 

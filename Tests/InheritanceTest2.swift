@@ -93,6 +93,10 @@ final class InheritanceTest2: XCTestCase {
             case .animal(let obj): try obj.encode(to: encoder)
             }
         }
+
+        public static func make() -> Self {
+            .cat(.make())
+        }
     }
 
     public protocol AnimalProtocol {
@@ -124,6 +128,10 @@ final class InheritanceTest2: XCTestCase {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.status = try container.decode(String.self, forKey: .status)
+        }
+
+        public static func make(status: String = "") -> Self {
+            self.init(status: status)
         }
     }
 
@@ -174,6 +182,10 @@ public struct Dog: Codable {
 
         case _unknownCase
         public static let unknownCase = Self._unknownCase
+    }
+
+    public static func make(status: String = "", array: [Foo]? = nil, barks: Bool = false, foobar: Foobar? = nil) -> Self {
+        self.init(status: status, array: array, barks: barks, foobar: foobar)
     }
 }
 

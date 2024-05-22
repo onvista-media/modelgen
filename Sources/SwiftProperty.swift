@@ -57,4 +57,21 @@ struct SwiftType {
         let closeBracket = (isArray ? "]" : "")
         return "\(openBracket)\(name)\(closeBracket)"
     }
+
+    var defaultValue: String {
+        if isOptional {
+            return "nil"
+        }
+        if isArray {
+            return "[]"
+        }
+        switch name {
+        case "Int": return "0"
+        case "Double": return "0.0"
+        case "Bool": return "false"
+        case "String": return "\"\""
+        case "Date": return ".init()"
+        default: return ".make()"
+        }
+    }
 }
