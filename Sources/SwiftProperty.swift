@@ -34,27 +34,33 @@ struct SwiftType {
     let name: String
     let isOptional: Bool
     let isCustom: Bool
-    let isArray: Bool
+    let qualifier: CollectionQualifier
     let isAnyCodable: Bool
 
-    init(name: String, isOptional: Bool, isCustom: Bool, isArray: Bool, isAnyCodable: Bool = false) {
+    enum CollectionQualifier {
+        case scalar, array, dictionary
+    }
+
+    init(name: String, isOptional: Bool, isCustom: Bool, qualifier: CollectionQualifier, isAnyCodable: Bool = false) {
         self.name = SwiftKeywords.safe(name)
         self.isOptional = isOptional
         self.isCustom = isCustom
-        self.isArray = isArray
+        self.qualifier = qualifier
         self.isAnyCodable = isAnyCodable
     }
 
     var propertyType: String {
-        let openBracket = (isArray ? "[" : "")
-        let closeBracket = (isArray ? "]" : "")
-        let optional = (isOptional ? "?" : "")
+        let isArray = qualifier == .array
+        let openBracket = isArray ? "[" : ""
+        let closeBracket = isArray ? "]" : ""
+        let optional = isOptional ? "?" : ""
         return "\(openBracket)\(name)\(closeBracket)\(optional)"
     }
 
     var baseType: String {
-        let openBracket = (isArray ? "[" : "")
-        let closeBracket = (isArray ? "]" : "")
+        let isArray = qualifier == .array
+        let openBracket = isArray ? "[" : ""
+        let closeBracket = isArray ? "]" : ""
         return "\(openBracket)\(name)\(closeBracket)"
     }
 
@@ -62,16 +68,18 @@ struct SwiftType {
         if isOptional {
             return "nil"
         }
-        if isArray {
-            return "[]"
-        }
-        switch name {
-        case "Int": return "0"
-        case "Double": return "0.0"
-        case "Bool": return "false"
-        case "String": return "\"\""
-        case "Date": return ".init()"
-        default: return ".make()"
+        switch qualifier {
+        case .array: return "[]"
+        case .dictionary: return "[:]"
+        case .scalar:
+            switch name {
+            case "Int": return "0"
+            case "Double": return "0.0"
+            case "Bool": return "false"
+            case "String": return "\"\""
+            case "Date": return ".init()"
+            default: return ".make()"
+            }
         }
     }
 }

@@ -111,9 +111,9 @@ extension Generator {
                 print("var queryItems = [URLQueryItem?]()")
                 for param in queryParams {
                     let type = param.schema.swiftType(for: "", param.name, param.required == true)
-                    if type.isArray && type.isOptional {
+                    if type.qualifier == .array && type.isOptional {
                         print(#"queryItems.append(contentsOf: (\#(param.name.camelCased()) ?? []).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
-                    } else if type.isArray {
+                    } else if type.qualifier == .array {
                         print(#"queryItems.append(contentsOf: \#(param.name.camelCased()).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
                     } else {
                         print(#"queryItems.append(URLQueryItem(name: "\#(param.name)", value: \#(param.name.camelCased())))"#)

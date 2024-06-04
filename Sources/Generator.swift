@@ -261,7 +261,7 @@ final class Generator {
             let decodeFun = type.isOptional ? "decodeIfPresent" : "decode"
             print("self.\(prop.name) = try container.\(decodeFun)", terminator: "")
 
-            if type.isArray && type.isCustom {
+            if type.qualifier == .array && type.isCustom {
                 let optional = type.isOptional ? "?" : ""
                 print("(LossyDecodableArray<\(type.name)>.self, forKey: .\(prop.name))\(optional).elements")
             } else {
@@ -412,6 +412,10 @@ final class Generator {
     }
 
     private func generateEnum(name: String, cases: [String]) {
+        if cases.isEmpty {
+            fatalError("enum \(name) has no cases")
+        }
+
         let sortedCases = Set(cases).sorted(by: <)
         block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable") {
             for c in sortedCases {
@@ -421,6 +425,11 @@ final class Generator {
             print("")
             print("case _unknownCase")
             print("public static let unknownCase = Self._unknownCase")
+
+            print("")
+            block("public static func make() -> Self") {
+                print(".\(sortedCases.first!.camelCased())")
+            }
         }
     }
 

@@ -10,19 +10,25 @@ extension Property {
 
         switch rawType {
         case .anyCodable:
-            return SwiftType(name: "AnyCodable", isOptional: !required, isCustom: false, isArray: false, isAnyCodable: true)
-        case .builtIn(let type, let isArray):
-            return SwiftType(name: type, isOptional: !required, isCustom: false, isArray: isArray)
+            return SwiftType(name: "AnyCodable", isOptional: !required, isCustom: false, qualifier: .scalar, isAnyCodable: true)
+        case .builtInScalar(let type):
+            return SwiftType(name: type, isOptional: !required, isCustom: false, qualifier: .scalar)
+        case .builtInArray(let type):
+            return SwiftType(name: type, isOptional: !required, isCustom: false, qualifier: .array)
+        case .builtInDictionary(let type):
+            return SwiftType(name: type, isOptional: !required, isCustom: false, qualifier: .dictionary)
         case .custom(let type):
-            return SwiftType(name: type, isOptional: !required, isCustom: true, isArray: false)
+            return SwiftType(name: type, isOptional: !required, isCustom: true, qualifier: .scalar)
         case .customArray(let type):
-            return SwiftType(name: type, isOptional: !required, isCustom: true, isArray: true)
+            return SwiftType(name: type, isOptional: !required, isCustom: true, qualifier: .array)
         }
     }
 
     private enum Kind {
         case anyCodable
-        case builtIn(name: String, isArray: Bool)
+        case builtInScalar(String)
+        case builtInArray(String)
+        case builtInDictionary(String)
         case custom(String)
         case customArray(String)
     }
@@ -30,10 +36,10 @@ extension Property {
     private func rawSwiftType(for modelName: String, _ propertyName: String) -> Kind {
         if enumCases != nil {
             if type == "array" {
-                return .builtIn(name: "String", isArray: true)
+                return .builtInArray("String")
             }
             assert(type == "string", "\(modelName): enum rawValues must be strings")
-            return .builtIn(name: propertyName.uppercasedFirst(), isArray: false)
+            return .builtInScalar(propertyName.uppercasedFirst())
         }
 
         switch type {
@@ -41,9 +47,9 @@ extension Property {
             switch items {
             case .property(let prop):
                 let type = prop.swiftType(for: modelName, propertyName)
-                return .builtIn(name: "\(type.name)", isArray: true)
+                return .builtInArray("\(type.name)")
             case .ref(let ref):
-                let type = ref.swiftType(isArray: true)
+                let type = ref.swiftType(qualifier: .array)
                 return .customArray(type.name)
             case .none:
                 fatalError("\(modelName): array \(propertyName) has no items")
@@ -51,7 +57,7 @@ extension Property {
 
         case "number":
             switch format {
-            case .none, "double": return .builtIn(name: "Double", isArray: false)
+            case .none, "double": return .builtInScalar("Double")
             default: fatalError("\(modelName): unknown format \(String(describing: format)) for number property")
             }
 
@@ -61,8 +67,12 @@ extension Property {
                 case .property(let prop):
                     let inner = prop.rawSwiftType(for: modelName, propertyName)
                     switch inner {
-                    case .builtIn(let type, _):
-                        return .builtIn(name: "[String: \(type)]", isArray: false)
+                    case .builtInScalar(let type):
+                        return .builtInDictionary("[String: \(type)]")
+                    case .builtInArray(let type):
+                        return .builtInDictionary("[String: [\(type)]]")
+                    case .builtInDictionary(let type):
+                        fatalError("\(modelName): \(propertyName) has unsupported type 'dict of \(type)'")
                     case .custom(let type):
                         return .custom(type)
                     case .customArray(let type):
@@ -72,7 +82,7 @@ extension Property {
                     }
                 case .ref(let ref):
                     let refType = ref.swiftType()
-                    return .builtIn(name: "[String: \(refType.propertyType)]", isArray: false)
+                    return .builtInDictionary("[String: \(refType.propertyType)]")
                 }
             } else {
                 return .anyCodable
@@ -80,19 +90,19 @@ extension Property {
 
         case "string":
             switch format {
-            case .none: return .builtIn(name: "String", isArray: false)
-            case "date-time": return .builtIn(name: "Date", isArray: false)
+            case .none: return .builtInScalar("String")
+            case "date-time": return .builtInScalar("Date")
             default: fatalError("\(modelName): unknown string format '\(format!)' for \(propertyName)")
             }
 
         case "boolean":
-            return .builtIn(name: "Bool", isArray: false)
+            return .builtInScalar("Bool")
 
         case "integer":
-            return .builtIn(name: "Int", isArray: false)
+            return .builtInScalar("Int")
 
         case "double":
-            return .builtIn(name: "Double", isArray: false)
+            return .builtInScalar("Double")
 
         default:
             fatalError("\(modelName): unknown type \(type)")
