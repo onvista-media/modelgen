@@ -182,6 +182,10 @@ public struct Dog: Codable {
 
         case _unknownCase
         public static let unknownCase = Self._unknownCase
+
+        public static func make() -> Self {
+            .bar
+        }
     }
 
     public static func make(status: String = "", array: [Foo]? = nil, barks: Bool = false, foobar: Foobar? = nil) -> Self {

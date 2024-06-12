@@ -33,6 +33,10 @@ final class EnumTest: XCTestCase {
 
         case _unknownCase
         public static let unknownCase = Self._unknownCase
+
+        public static func make() -> Self {
+            ._2case
+        }
     }
     """
 

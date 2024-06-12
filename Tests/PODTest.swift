@@ -108,6 +108,10 @@ final class PODTest: XCTestCase {
 
                 case _unknownCase
                 public static let unknownCase = Self._unknownCase
+
+                public static func make() -> Self {
+                    .bar
+                }
             }
 
             public static func make(bool: Bool = false, double: Double? = nil, foobar: Foobar? = nil, ints: [Int] = [], lossy: [Foo]? = nil, ref: Object? = nil, string: String? = nil) -> Self {
