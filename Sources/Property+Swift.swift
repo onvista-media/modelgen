@@ -47,7 +47,14 @@ extension Property {
             switch items {
             case .property(let prop):
                 let type = prop.swiftType(for: modelName, propertyName)
-                return .builtInArray("\(type.name)")
+                switch type.qualifier {
+                case .array:
+                    return .builtInArray("[\(type.name)]")
+                case .scalar:
+                    return .builtInArray("\(type.name)")
+                default:
+                    fatalError("\(modelName): unsupported q=\(type.qualifier) for array \(propertyName)")
+                }
             case .ref(let ref):
                 let type = ref.swiftType(qualifier: .array)
                 return .customArray(type.name)
