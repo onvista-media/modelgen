@@ -1,6 +1,8 @@
 rm -rf output/Sources/Requests output/Sources/Models
 
-INPUT=swagger-bz.json
+INPUT=${1:-swagger.json}
+
+echo "building from $INPUT..."
 
 EXCL="ReadPolimorphicList,WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,GetStandardRssFeed,GetNewsSitemap,GetNewsSitemap_1,QueryWebsocket,CreatePositionMiniChart"
 swift run modelgen --input $INPUT --output output/Sources -c Plan --exclude "$EXCL"

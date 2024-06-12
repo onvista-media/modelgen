@@ -9,13 +9,13 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.10"
+    static let version = "v0.1.11"
 
     @Option(name: .shortAndLong, help: "name of the input file")
-    var input: String = "~/Developer/onvista/modelgen/swagger.json"
+    var input: String = ""
 
     @Option(name: .shortAndLong, help: "name of the output directory")
-    var output: String = "~/Developer/onvista/modelgen/output/Sources"
+    var output: String = ""
 
     @Option(name: .shortAndLong, help: "list of schemas that are generated as classes, not structs")
     var classSchemas: String?
@@ -42,16 +42,6 @@ struct ModelGen: ParsableCommand {
     }
 
     mutating func run() throws {
-        let env = ProcessInfo().environment
-        if env["OS_ACTIVITY_DT_MODE"] == "YES" {
-            // running from Xcode
-            stdout = true
-            input = "~/Developer/onvista/modelgen/swagger-bz.json"
-            output = "~/Developer/onvista/modelgen/output/Sources"
-            exclude = "WriteEntities,ReadUserSession,GetHubRssFeedDpa,GetHubRssFeedOnvista,GetHubRssFeedReuters,QueryWebsocket"
-            include = "CreateCancelOrder"
-        }
-
         let data = try Data(contentsOf: URL(fileURLWithPath: input))
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: data)
 
