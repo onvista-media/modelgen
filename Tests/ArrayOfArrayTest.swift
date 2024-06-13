@@ -4,6 +4,7 @@
 //  Copyright © 2023 onvista media GmbH. All rights reserved.
 //
 
+import CustomDump
 import XCTest
 @testable import modelgen
 
@@ -108,7 +109,7 @@ extension ArrayItem: ParentProtocol {}
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec)
         generator.generate(modelName: "ArrayItem", skipHeader: true)
-        print(generator.buffer)
-        XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expectedResult)
+
+        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedResult)
     }
 }

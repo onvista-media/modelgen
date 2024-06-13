@@ -4,6 +4,7 @@
 //  Copyright © 2023 onvista media GmbH. All rights reserved.
 //
 
+import CustomDump
 import XCTest
 @testable import modelgen
 
@@ -139,13 +140,13 @@ extension Dog: AnimalProtocol {}
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec)
         generator.generate(modelName: "Animal", skipHeader: true)
-        XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expectedBase)
+        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedBase)
     }
 
     func testChildClassDog() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec)
         generator.generate(modelName: "Dog", skipHeader: true)
-        XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expectedDog)
+        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedDog)
     }
 }

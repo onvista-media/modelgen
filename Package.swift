@@ -12,7 +12,8 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0"),
-        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.2.2")
+        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.2.2"),
+        .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.3.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -29,7 +30,10 @@ let package = Package(
         ),
         .testTarget(
             name: "modelgenTests",
-            dependencies: [ "modelgen" ],
+            dependencies: [ 
+                "modelgen",
+                .product(name: "CustomDump", package: "swift-custom-dump")
+            ],
             path: "Tests"
         )
     ]

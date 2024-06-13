@@ -5,6 +5,7 @@
 //  Created by Gereon Steffens on 03.05.24.
 //
 
+import CustomDump
 import XCTest
 @testable import modelgen
 
@@ -140,6 +141,6 @@ public struct GetStatusRequest {
         let generator = Generator(spec: spec)
         let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
         generator.generate(path: "/status", method: "GET", request: req, skipHeader: true)
-        XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expectedOutput)
+        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 }

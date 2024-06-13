@@ -4,6 +4,7 @@
 //  Copyright © 2023 onvista media GmbH. All rights reserved.
 //
 
+import CustomDump
 import XCTest
 @testable import modelgen
 
@@ -44,7 +45,7 @@ final class EnumTest: XCTestCase {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec)
         generator.generate(modelName: "Enum", skipHeader: true)
-        XCTAssertEqual(String(generator.buffer.dropLast(1)), multiline: expected)
+        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expected)
     }
 
 }

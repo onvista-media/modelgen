@@ -4,6 +4,7 @@
 //  Copyright © 2023 onvista media GmbH. All rights reserved.
 //
 
+import CustomDump
 import XCTest
 @testable import modelgen
 
@@ -125,6 +126,6 @@ final class PODTest: XCTestCase {
         let generator = Generator(spec: spec)
         generator.generate(modelName: "POD", skipHeader: true)
         let output = String(generator.buffer.dropLast(1))
-        XCTAssertEqual(output, multiline: expected)
+        XCTAssertNoDifference(output, expected)
     }
 }
