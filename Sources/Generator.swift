@@ -21,7 +21,7 @@ final class Generator {
         output.buffer
     }
 
-    func generate(modelName: String, skipHeader: Bool = false) {
+    func generate(modelName: String, imports: [String] = [], skipHeader: Bool = false) {
         guard let schema = schemas[modelName] else {
             fatalError("\(modelName): schema not found")
         }
@@ -29,7 +29,7 @@ final class Generator {
         output.reset()
 
         if !skipHeader {
-            generateFileHeader(modelName: modelName, schema: schema)
+            generateFileHeader(modelName: modelName, schema: schema, imports: imports)
         }
         if schema.discriminator != nil {
             generateModelEnum(modelName: modelName, schema: schema)
@@ -50,7 +50,7 @@ final class Generator {
     }
 
     // MARK: - file header
-    func generateFileHeader(modelName: String, schema: Schema?, import: String? = nil) {
+    func generateFileHeader(modelName: String, schema: Schema?, imports: [String]) {
         print("""
         //
         // \(modelName).swift
@@ -63,8 +63,8 @@ final class Generator {
 
         import Foundation
         """)
-        if let `import` {
-            print("import \(`import`)")
+        imports.forEach {
+            print("import \($0)")
         }
         print("")
         if let descr = schema?.description {
@@ -391,8 +391,8 @@ final class Generator {
             return
         }
 
-        for (name, prop) in properties {
-            guard case .property(let prop) = prop else {
+        for name in properties.keys.sorted(by: <) {
+            guard let prop = properties[name], case .property(let prop) = prop else {
                 continue
             }
             let enumName = SwiftKeywords.safe("\(name.uppercasedFirst())")

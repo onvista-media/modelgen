@@ -8,11 +8,12 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request, skipHeader: Bool = false) {
+    func generate(path: String, method: String, request: Request, imports: [String] = [], skipHeader: Bool = false) {
         let name = request.operationId.uppercasedFirst() + "Request"
 
         if !skipHeader {
-            generateFileHeader(modelName: name, schema: nil, import: "Dependencies")
+            let imports = imports + ["Dependencies"]
+            generateFileHeader(modelName: name, schema: nil, imports: imports.sorted(by: <))
         }
 
         let (_, successType, _) = successValues(for: request)
@@ -38,7 +39,8 @@ extension Generator {
             }
 
             print("")
-            for enumParam in (request.parameters ?? []).filter({ $0.schema.enumCases != nil }) {
+            let enumParams = (request.parameters ?? []).filter { $0.schema.enumCases != nil }
+            for enumParam in enumParams.sorted(by: { $0.name < $1.name }) {
                 block("public enum \(SwiftKeywords.safe(enumParam.name.uppercasedFirst())): String") {
                     let sortedCases = Set(enumParam.schema.enumCases ?? []).sorted()
                     for enumCase in sortedCases {

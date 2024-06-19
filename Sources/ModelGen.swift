@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.11"
+    static let version = "v0.1.12"
 
     @Option(name: .shortAndLong, help: "name of the input file")
     var input: String = ""
@@ -28,6 +28,9 @@ struct ModelGen: ParsableCommand {
 
     @Option(name: .shortAndLong, help: "print to stdout instead of creating files")
     var stdout = false
+
+    @Option(name: .long, help: "list of additional modules to import")
+    var imports: String?
 
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
@@ -60,6 +63,7 @@ struct ModelGen: ParsableCommand {
 
         let excludes = (self.exclude ?? "").split(separator: ",").map { String($0) }
         let includes = (self.include ?? "").split(separator: ",").map { String($0) }
+        let imports = (self.imports ?? "").split(separator: ",").map { String($0) }
 
         if let paths = spec.paths {
             for (path, requests) in paths {
@@ -70,7 +74,7 @@ struct ModelGen: ParsableCommand {
                     }
                     if includes.isEmpty || includes.contains(name) {
                         let generator = Generator(spec: spec, classSchemas: classSchemas)
-                        generator.generate(path: path, method: method, request: request)
+                        generator.generate(path: path, method: method, request: request, imports: imports)
 
                         try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
                     }
@@ -84,7 +88,7 @@ struct ModelGen: ParsableCommand {
             }
             if includes.isEmpty || includes.contains(name) {
                 let generator = Generator(spec: spec, classSchemas: classSchemas)
-                generator.generate(modelName: name)
+                generator.generate(modelName: name, imports: imports)
 
                 try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
             }
