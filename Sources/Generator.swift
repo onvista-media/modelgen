@@ -428,8 +428,7 @@ final class Generator {
 
             print("")
             block("public static func make() -> Self") {
-                let first = sortedCases.first!.camelCased()
-                print(".\(SwiftKeywords.safe(first))")
+                print("._unknownCase")
             }
         }
     }
