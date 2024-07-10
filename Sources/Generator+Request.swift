@@ -8,7 +8,7 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request, imports: [String] = [], skipHeader: Bool = false) {
+    func generate(path: String, method: String, request: Request, imports: [String] = [], addTag: String?, skipHeader: Bool = false) {
         let name = request.operationId.uppercasedFirst() + "Request"
 
         if !skipHeader {
@@ -22,9 +22,10 @@ extension Generator {
         if request.deprecated == true {
             print("@available(*, deprecated)")
         }
+        let tags = (request.tags + [ addTag ]).compactMap { $0 }
         block("public struct \(name)") {
             print("static let path = \"\(path)\"")
-            print("public let tags = \(request.tags)")
+            print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")
             print(#"@Dependency(\.jsonEncoder) var jsonEncoder"#)
             print(#"@Dependency(\.jsonDecoder) var jsonDecoder"#)

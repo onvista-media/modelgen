@@ -9,7 +9,9 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.12"
+    static let version = "v0.1.13"
+
+    static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
     @Option(name: .shortAndLong, help: "name of the input file")
     var input: String = ""
@@ -31,6 +33,9 @@ struct ModelGen: ParsableCommand {
 
     @Option(name: .long, help: "list of additional modules to import")
     var imports: String?
+
+    @Option(name: .long, help: "tag to add to each generated `tags` array")
+    var addTag: String?
 
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
@@ -74,7 +79,7 @@ struct ModelGen: ParsableCommand {
                     }
                     if includes.isEmpty || includes.contains(name) {
                         let generator = Generator(spec: spec, classSchemas: classSchemas)
-                        generator.generate(path: path, method: method, request: request, imports: imports)
+                        generator.generate(path: path, method: method, request: request, imports: imports, addTag: addTag)
 
                         try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
                     }
