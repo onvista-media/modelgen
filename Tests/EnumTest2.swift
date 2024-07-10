@@ -66,7 +66,7 @@ final class EnumTest2: XCTestCase {
             public static let unknownCase = Self._unknownCase
 
             public static func make() -> Self {
-                .plugh
+                ._unknownCase
             }
         }
 
@@ -79,7 +79,7 @@ final class EnumTest2: XCTestCase {
             public static let unknownCase = Self._unknownCase
 
             public static func make() -> Self {
-                .bar
+                ._unknownCase
             }
         }
 

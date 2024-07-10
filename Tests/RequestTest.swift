@@ -59,7 +59,7 @@ final class RequestTest: XCTestCase {
 // getStatus: GET /status -> Status
 public struct GetStatusRequest {
     static let path = "/status"
-    public let tags = ["/status"]
+    public let tags = ["/status", "testTag"]
     public let urlRequest: URLRequest
     @Dependency(\.jsonEncoder) var jsonEncoder
     @Dependency(\.jsonDecoder) var jsonDecoder
@@ -140,7 +140,7 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec)
         let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
-        generator.generate(path: "/status", method: "GET", request: req, skipHeader: true)
+        generator.generate(path: "/status", method: "GET", request: req, addTag: "testTag", skipHeader: true)
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 }
