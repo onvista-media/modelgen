@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.13"
+    static let version = "v0.1.14"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
@@ -36,6 +36,9 @@ struct ModelGen: ParsableCommand {
 
     @Option(name: .long, help: "tag to add to each generated `tags` array")
     var addTag: String?
+
+    @Option(name: .long, help: "list of request/model parameters that should have default values")
+    var defaultValues: String?
 
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
@@ -69,6 +72,7 @@ struct ModelGen: ParsableCommand {
         let excludes = (self.exclude ?? "").split(separator: ",").map { String($0) }
         let includes = (self.include ?? "").split(separator: ",").map { String($0) }
         let imports = (self.imports ?? "").split(separator: ",").map { String($0) }
+        let defaultValues = (self.defaultValues ?? "").split(separator: ",").map { String($0) }
 
         if let paths = spec.paths {
             for (path, requests) in paths {
@@ -79,7 +83,7 @@ struct ModelGen: ParsableCommand {
                     }
                     if includes.isEmpty || includes.contains(name) {
                         let generator = Generator(spec: spec, classSchemas: classSchemas)
-                        generator.generate(path: path, method: method, request: request, imports: imports, addTag: addTag)
+                        generator.generate(path: path, method: method, request: request, imports: imports, addTag: addTag, defaultValues: defaultValues)
 
                         try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
                     }
@@ -93,7 +97,7 @@ struct ModelGen: ParsableCommand {
             }
             if includes.isEmpty || includes.contains(name) {
                 let generator = Generator(spec: spec, classSchemas: classSchemas)
-                generator.generate(modelName: name, imports: imports)
+                generator.generate(modelName: name, imports: imports, defaultValues: defaultValues)
 
                 try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
             }

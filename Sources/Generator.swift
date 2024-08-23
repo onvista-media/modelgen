@@ -21,7 +21,7 @@ final class Generator {
         output.buffer
     }
 
-    func generate(modelName: String, imports: [String] = [], skipHeader: Bool = false) {
+    func generate(modelName: String, imports: [String] = [], defaultValues: [String] = [], skipHeader: Bool = false) {
         guard let schema = schemas[modelName] else {
             fatalError("\(modelName): schema not found")
         }
@@ -32,11 +32,11 @@ final class Generator {
             generateFileHeader(modelName: modelName, schema: schema, imports: imports)
         }
         if schema.discriminator != nil {
-            generateModelEnum(modelName: modelName, schema: schema)
+            generateModelEnum(modelName: modelName, schema: schema, defaultValues: defaultValues)
         } else if schema.properties != nil {
-            generateModelStruct(modelName: modelName, schema: schema)
+            generateModelStruct(modelName: modelName, schema: schema, defaultValues: defaultValues)
         } else if schema.allOf != nil {
-            generateCompositeStruct(modelName: modelName, schema: schema)
+            generateCompositeStruct(modelName: modelName, schema: schema, defaultValues: defaultValues)
         } else if schema.enumCases != nil {
             generateSimpleEnum(modelName: modelName, schema: schema)
         } else {
@@ -133,7 +133,7 @@ final class Generator {
     }
 
     // MARK: - composite struct aka child class
-    private func generateCompositeStruct(modelName: String, schema: Schema) {
+    private func generateCompositeStruct(modelName: String, schema: Schema, defaultValues: [String]) {
         guard let allOf = schema.allOf else {
             fatalError("\(modelName) has no allOf values")
         }
@@ -148,7 +148,7 @@ final class Generator {
             var sep = ""
             generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
                 print(sep, terminator: "")
-                generateParameters($0)
+                generateParameters($0, defaultValues: defaultValues)
                 sep = ", "
             }
 
@@ -193,7 +193,7 @@ final class Generator {
     }
 
     // MARK: - model struct
-    private func generateModelStruct(modelName: String, schema: Schema) {
+    private func generateModelStruct(modelName: String, schema: Schema, defaultValues: [String]) {
         let properties = schema.swiftProperties(for: modelName)
 
         let type = classSchemas.contains(modelName) ? "final class" : "struct"
@@ -202,7 +202,7 @@ final class Generator {
 
             // init method
             print("public init(", terminator: "")
-            generateParameters(properties)
+            generateParameters(properties, defaultValues: defaultValues)
             block(")") {
                 generateAssignments(properties)
             }
@@ -275,7 +275,7 @@ final class Generator {
     }
 
     // MARK: - model enum aka base class
-    private func generateModelEnum(modelName: String, schema: Schema) {
+    private func generateModelEnum(modelName: String, schema: Schema, defaultValues: [String]) {
         guard let discriminator = schema.discriminator else {
             fatalError("\(modelName) has no discriminator")
         }
@@ -379,7 +379,7 @@ final class Generator {
 
         if createBaseType {
             print("")
-            generateModelStruct(modelName: "\(modelName)Base", schema: schema)
+            generateModelStruct(modelName: "\(modelName)Base", schema: schema, defaultValues: defaultValues)
             print("")
             print("extension \(modelName)Base: \(modelName)Protocol {}")
         }
@@ -445,9 +445,15 @@ final class Generator {
         }
     }
 
-    private func generateParameters(_ properties: [SwiftProperty]) {
+    private func generateParameters(_ properties: [SwiftProperty], defaultValues: [String]) {
         let params = properties
-            .map { "\($0.name): \($0.type.propertyType)" }
+            .map {
+                let param = "\($0.name): \($0.type.propertyType)"
+                if defaultValues.contains($0.name) {
+                    return "\(param) = DefaultValues.\($0.name)"
+                }
+                return param
+            }
             .joined(separator: ", ")
         print(params, terminator: "")
     }

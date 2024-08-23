@@ -8,7 +8,7 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request, imports: [String] = [], addTag: String?, skipHeader: Bool = false) {
+    func generate(path: String, method: String, request: Request, imports: [String] = [], addTag: String? = nil, defaultValues: [String] = [], skipHeader: Bool = false) {
         let name = request.operationId.uppercasedFirst() + "Request"
 
         if !skipHeader {
@@ -53,7 +53,7 @@ extension Generator {
 
             let parameters = (request.parameters ?? [])
                 .sorted { $0.name.lowercased() < $1.name.lowercased() }
-            generateInit(method: method, request: request, parameters: parameters, bodyType: bodyType)
+            generateInit(method: method, request: request, parameters: parameters, defaultValues: defaultValues, bodyType: bodyType)
 
             print("")
             generateResponseEnum(request: request)
@@ -88,7 +88,7 @@ extension Generator {
         }
     }
 
-    private func generateInit(method: String, request: Request, parameters: [Parameter], bodyType: SwiftType?) {
+    private func generateInit(method: String, request: Request, parameters: [Parameter], defaultValues: [String], bodyType: SwiftType?) {
         var params = parameters.map {
             ($0.name.camelCased(), $0.schema.swiftType(for: "", $0.name, $0.required == true))
         }
@@ -97,7 +97,13 @@ extension Generator {
             params.append(("body", bodyType))
         }
 
-        var initParameters = params.map { $0.camelCased() + ": " + $1.propertyType }
+        var initParameters = params.map { name, type in
+            let param = "\(name.camelCased()): \(type.propertyType)"
+            if defaultValues.contains(name) {
+                return "\(param) = DefaultValues.\(name)"
+            }
+            return param
+        }
         initParameters.append("useCache: Bool = true")
 
         block("public init(\(initParameters.joined(separator: ", ")))") {
