@@ -1,0 +1,28 @@
+{
+  "configurations" : [
+    {
+      "id" : "B0A0DB06-F803-4AC0-AEBF-5DBD670F7765",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:",
+      "identifier" : "modelgen",
+      "name" : "modelgen"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "modelgenTests",
+        "name" : "modelgenTests"
+      }
+    }
+  ],
+  "version" : 1
+}
