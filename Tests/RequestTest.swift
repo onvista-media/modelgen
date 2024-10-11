@@ -235,17 +235,17 @@ public struct GetStatusRequest {
 
     func testRequest() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
+        let generator = Generator(spec: spec, config: .init(tag: "testTag", skipHeader: true))
         let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
-        generator.generate(path: "/status", method: "GET", request: req, addTag: "testTag", skipHeader: true)
+        generator.generate(path: "/status", method: "GET", request: req)
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 
     func testRequestWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
+        let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
         let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
-        generator.generate(path: "/status", method: "GET", request: req, addTag: "testTag", defaultValues: ["foo"], skipHeader: true)
+        generator.generate(path: "/status", method: "GET", request: req)
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutputWithDefaults)
     }
 }

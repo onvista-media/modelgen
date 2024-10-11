@@ -107,8 +107,8 @@ extension ArrayItem: ParentProtocol {}
 
     func testChildClassTable() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "ArrayItem", skipHeader: true)
+        let generator = Generator(spec: spec, config: .test)
+        generator.generate(modelName: "ArrayItem")
 
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedResult)
     }

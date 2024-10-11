@@ -40,6 +40,9 @@ struct ModelGen: ParsableCommand {
     @Option(name: .long, help: "list of request/model parameters that should have default values")
     var defaultValues: String?
 
+    @Flag(name: .long, help: "add `Sendable` conformance")
+    var sendable: Bool = false
+
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
         output = NSString(string: output).expandingTildeInPath
@@ -69,21 +72,26 @@ struct ModelGen: ParsableCommand {
             }
         }
 
-        let excludes = (self.exclude ?? "").split(separator: ",").map { String($0) }
-        let includes = (self.include ?? "").split(separator: ",").map { String($0) }
-        let imports = (self.imports ?? "").split(separator: ",").map { String($0) }
-        let defaultValues = (self.defaultValues ?? "").split(separator: ",").map { String($0) }
+        let config = Generator.Config(
+            excludes: (self.exclude ?? "").split(separator: ",").map { String($0) },
+            includes: (self.include ?? "").split(separator: ",").map { String($0) },
+            imports: (self.imports ?? "").split(separator: ",").map { String($0) },
+            defaultValues: (self.defaultValues ?? "").split(separator: ",").map { String($0) },
+            tag: addTag,
+            sendable: sendable,
+            skipHeader: false
+        )
 
         if let paths = spec.paths {
             for (path, requests) in paths {
                 for (method, request) in requests {
                     let name = request.operationId.uppercasedFirst()
-                    if excludes.contains(name) {
+                    if config.excludes.contains(name) {
                         continue
                     }
-                    if includes.isEmpty || includes.contains(name) {
-                        let generator = Generator(spec: spec, classSchemas: classSchemas)
-                        generator.generate(path: path, method: method, request: request, imports: imports, addTag: addTag, defaultValues: defaultValues)
+                    if config.includes.isEmpty || config.includes.contains(name) {
+                        let generator = Generator(spec: spec, classSchemas: classSchemas, config: config)
+                        generator.generate(path: path, method: method, request: request)
 
                         try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
                     }
@@ -92,12 +100,12 @@ struct ModelGen: ParsableCommand {
         }
 
         for name in spec.components.schemas.keys {
-            if excludes.contains(name) {
+            if config.excludes.contains(name) {
                 continue
             }
-            if includes.isEmpty || includes.contains(name) {
-                let generator = Generator(spec: spec, classSchemas: classSchemas)
-                generator.generate(modelName: name, imports: imports, defaultValues: defaultValues)
+            if config.includes.isEmpty || config.includes.contains(name) {
+                let generator = Generator(spec: spec, classSchemas: classSchemas, config: config)
+                generator.generate(modelName: name)
 
                 try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
             }

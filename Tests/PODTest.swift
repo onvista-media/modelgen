@@ -189,16 +189,16 @@ final class PODTest: XCTestCase {
 
     func testPOD() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "POD", skipHeader: true)
+        let generator = Generator(spec: spec, config: .test)
+        generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         XCTAssertNoDifference(output, expected)
     }
 
     func testPODWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "POD", defaultValues: ["foobar"], skipHeader: true)
+        let generator = Generator(spec: spec, config: .init(defaultValues: ["foobar"], skipHeader: true))
+        generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         XCTAssertNoDifference(output, expectedWithDefaults)
     }

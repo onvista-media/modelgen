@@ -91,8 +91,8 @@ final class EnumTest2: XCTestCase {
 
     func testEnumOrder() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "Enum", skipHeader: true)
+        let generator = Generator(spec: spec, config: .test)
+        generator.generate(modelName: "Enum")
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expected)
     }
 }

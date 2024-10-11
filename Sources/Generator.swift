@@ -5,38 +5,40 @@
 //
 
 final class Generator {
-    private let output = OutputBuffer()
-    private let schemas: [String: Schema]
-    private let info: Info
-    private let classSchemas: Set<String>
+    let output = OutputBuffer()
+    let schemas: [String: Schema]
+    let info: Info
+    let classSchemas: Set<String>
     private var importAnyCodable = false
+    let config: Config
 
-    init(spec: OpenApiSpec, classSchemas: String? = nil) {
+    init(spec: OpenApiSpec, classSchemas: String? = nil, config: Config) {
         self.schemas = spec.components.schemas
         self.classSchemas = Set((classSchemas ?? "").components(separatedBy: ","))
         self.info = spec.info
+        self.config = config
     }
 
     var buffer: String {
         output.buffer
     }
 
-    func generate(modelName: String, imports: [String] = [], defaultValues: [String] = [], skipHeader: Bool = false) {
+    func generate(modelName: String) {
         guard let schema = schemas[modelName] else {
             fatalError("\(modelName): schema not found")
         }
 
         output.reset()
 
-        if !skipHeader {
-            generateFileHeader(modelName: modelName, schema: schema, imports: imports)
+        if !config.skipHeader {
+            generateFileHeader(modelName: modelName, schema: schema, imports: config.imports)
         }
         if schema.discriminator != nil {
-            generateModelEnum(modelName: modelName, schema: schema, defaultValues: defaultValues)
+            generateModelEnum(modelName: modelName, schema: schema)
         } else if schema.properties != nil {
-            generateModelStruct(modelName: modelName, schema: schema, defaultValues: defaultValues)
+            generateModelStruct(modelName: modelName, schema: schema)
         } else if schema.allOf != nil {
-            generateCompositeStruct(modelName: modelName, schema: schema, defaultValues: defaultValues)
+            generateCompositeStruct(modelName: modelName, schema: schema)
         } else if schema.enumCases != nil {
             generateSimpleEnum(modelName: modelName, schema: schema)
         } else {
@@ -133,12 +135,13 @@ final class Generator {
     }
 
     // MARK: - composite struct aka child class
-    private func generateCompositeStruct(modelName: String, schema: Schema, defaultValues: [String]) {
+    private func generateCompositeStruct(modelName: String, schema: Schema) {
         guard let allOf = schema.allOf else {
             fatalError("\(modelName) has no allOf values")
         }
 
-        block("public struct \(modelName): Codable") {
+        let sendable = config.sendable ? ", Sendable" : ""
+        block("public struct \(modelName): Codable\(sendable)") {
             generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
                 generateProperties($0)
             }
@@ -148,7 +151,7 @@ final class Generator {
             var sep = ""
             generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
                 print(sep, terminator: "")
-                generateParameters($0, defaultValues: defaultValues)
+                generateParameters($0, defaultValues: config.defaultValues)
                 sep = ", "
             }
 
@@ -193,16 +196,17 @@ final class Generator {
     }
 
     // MARK: - model struct
-    private func generateModelStruct(modelName: String, schema: Schema, defaultValues: [String]) {
+    private func generateModelStruct(modelName: String, schema: Schema) {
         let properties = schema.swiftProperties(for: modelName)
 
         let type = classSchemas.contains(modelName) ? "final class" : "struct"
-        block("public \(type) \(modelName): Codable") {
+        let sendable = config.sendable ? ", Sendable" : ""
+        block("public \(type) \(modelName): Codable\(sendable)") {
             generateProperties(properties)
 
             // init method
             print("public init(", terminator: "")
-            generateParameters(properties, defaultValues: defaultValues)
+            generateParameters(properties, defaultValues: config.defaultValues)
             block(")") {
                 generateAssignments(properties)
             }
@@ -275,7 +279,7 @@ final class Generator {
     }
 
     // MARK: - model enum aka base class
-    private func generateModelEnum(modelName: String, schema: Schema, defaultValues: [String]) {
+    private func generateModelEnum(modelName: String, schema: Schema) {
         guard let discriminator = schema.discriminator else {
             fatalError("\(modelName) has no discriminator")
         }
@@ -310,7 +314,8 @@ final class Generator {
         if schema.deprecated == true {
             print("@available(*, deprecated)")
         }
-        block("public enum \(modelName): Codable") {
+        let sendable = config.sendable ? ", Sendable" : ""
+        block("public enum \(modelName): Codable\(sendable)") {
             // enum cases
             for dc in discriminatorCases {
                 print("case \(dc.enumCase)(\(dc.mappedModel))")
@@ -379,7 +384,7 @@ final class Generator {
 
         if createBaseType {
             print("")
-            generateModelStruct(modelName: "\(modelName)Base", schema: schema, defaultValues: defaultValues)
+            generateModelStruct(modelName: "\(modelName)Base", schema: schema)
             print("")
             print("extension \(modelName)Base: \(modelName)Protocol {}")
         }
@@ -417,7 +422,8 @@ final class Generator {
         }
 
         let sortedCases = Set(cases).sorted(by: <)
-        block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable") {
+        let sendable = config.sendable ? ", Sendable" : ""
+        block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable\(sendable)") {
             for c in sortedCases {
                 let name = c.camelCased()
                 print(#"case \#(SwiftKeywords.safe(name)) = "\#(c)""#)

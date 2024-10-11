@@ -8,11 +8,11 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request, imports: [String] = [], addTag: String? = nil, defaultValues: [String] = [], skipHeader: Bool = false) {
+    func generate(path: String, method: String, request: Request) {
         let name = request.operationId.uppercasedFirst() + "Request"
 
-        if !skipHeader {
-            let imports = imports + ["Dependencies"]
+        if !config.skipHeader {
+            let imports = config.imports + ["Dependencies"]
             generateFileHeader(modelName: name, schema: nil, imports: imports.sorted(by: <))
         }
 
@@ -22,8 +22,9 @@ extension Generator {
         if request.deprecated == true {
             print("@available(*, deprecated)")
         }
-        let tags = (request.tags + [ addTag ]).compactMap { $0 }
-        block("public struct \(name)") {
+        let tags = (request.tags + [ config.tag ]).compactMap { $0 }
+        let sendable = config.sendable ? ": Sendable" : ""
+        block("public struct \(name)\(sendable)") {
             print("static let path = \"\(path)\"")
             print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")
@@ -53,7 +54,7 @@ extension Generator {
 
             let parameters = (request.parameters ?? [])
                 .sorted { $0.name.lowercased() < $1.name.lowercased() }
-            generateInit(method: method, request: request, parameters: parameters, defaultValues: defaultValues, bodyType: bodyType)
+            generateInit(method: method, request: request, parameters: parameters, defaultValues: config.defaultValues, bodyType: bodyType)
 
             print("")
             generateResponseEnum(request: request)
@@ -169,7 +170,8 @@ extension Generator {
     }
 
     private func generateResponseEnum(request: Request) {
-        block("public enum Response") {
+        let sendable = config.sendable ? ": Sendable" : ""
+        block("public enum Response\(sendable)") {
             for (code, response) in request.sortedResponses {
                 if code == "204" {
                     print("case ok // 204 no content")

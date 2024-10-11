@@ -199,15 +199,15 @@ extension Dog: AnimalProtocol {}
 
     func testBaseClass() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "Animal", skipHeader: true)
+        let generator = Generator(spec: spec, config: .test)
+        generator.generate(modelName: "Animal")
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedBase)
     }
 
     func testChildClassDog() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec)
-        generator.generate(modelName: "Dog", skipHeader: true)
+        let generator = Generator(spec: spec, config: .test)
+        generator.generate(modelName: "Dog")
         XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedDog)
     }
 }
