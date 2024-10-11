@@ -4,11 +4,13 @@
 //  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
+import Foundation
 import CustomDump
-import XCTest
+import Testing
 @testable import modelgen
 
-final class EnumTest: XCTestCase {
+@Suite("EnumTests")
+struct EnumTest {
     private let spec = """
     {
         "info": {
@@ -41,11 +43,12 @@ final class EnumTest: XCTestCase {
     }
     """
 
+    @Test("Enum")
     func testEnum() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "Enum")
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expected)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expected)
     }
 
 }

@@ -5,11 +5,13 @@
 //  Created by Gereon Steffens on 19.06.24.
 //
 
+import Foundation
 import CustomDump
+import Testing
 @testable import modelgen
-import XCTest
 
-final class EnumTest2: XCTestCase {
+@Suite("Enum Tests 2")
+struct EnumTest2 {
     private let spec = """
     {
         "info": {
@@ -89,10 +91,11 @@ final class EnumTest2: XCTestCase {
     }
     """
 
+    @Test("test Enum order")
     func testEnumOrder() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "Enum")
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expected)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expected)
     }
 }

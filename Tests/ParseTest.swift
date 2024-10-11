@@ -5,10 +5,12 @@
 //  Created by Gereon Steffens on 03.05.23.
 //
 
-import XCTest
+import Foundation
+import Testing
 @testable import modelgen
 
-final class ParseTest: XCTestCase {
+@Suite("Parse test")
+struct ParseTest {
     private let json = """
     [
         {
@@ -39,25 +41,28 @@ final class ParseTest: XCTestCase {
     ]
     """
 
+    @Test("parse array")
     func testParseArray() throws {
         let animals = try JSONDecoder().decode([Animal].self, from: json.data(using: .utf8)!)
-        XCTAssertEqual(animals.count, 2)
+        #expect(animals.count == 2)
     }
 
+    @Test("parse array failure")
     func testParseArrayFailure() throws {
         do {
             _ = try JSONDecoder().decode([Animal].self, from: json2.data(using: .utf8)!)
-            XCTFail("decoding should fail")
+            Issue.record("decoding should fail")
         } catch DecodingError.typeMismatch {
             // expected
         } catch {
-            XCTFail("unexpected error \(error)")
+            Issue.record("unexpected error \(error)")
         }
     }
 
+    @Test("parse lossy array")
     func testParseLossyArray() throws {
         let animals = try JSONDecoder().decode(LossyDecodableArray<Animal>.self, from: json2.data(using: .utf8)!).elements
-        XCTAssertEqual(animals.count, 2)
+        #expect(animals.count == 2)
     }
 
 }

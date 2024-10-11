@@ -4,13 +4,14 @@
 //  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
+import Foundation
 import CustomDump
-import XCTest
+import Testing
 @testable import modelgen
 
 // test inheritance with a string as the discriminator
-
-final class InheritanceTest2: XCTestCase {
+@Suite("Interitance test 2")
+struct InheritanceTest2 {
     private let spec = """
     {
         "info": {
@@ -199,17 +200,19 @@ public struct Dog: Codable {
 extension Dog: AnimalProtocol {}
 """#
 
+    @Test("test base class")
     func testBaseClass() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "Animal")
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedBase)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedBase)
     }
 
+    @Test("test child class dog")
     func testChildClassDog() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "Dog")
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedDog)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedDog)
     }
 }

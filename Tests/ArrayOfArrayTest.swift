@@ -4,13 +4,14 @@
 //  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
+import Foundation
 import CustomDump
-import XCTest
+import Testing
 @testable import modelgen
 
 // test 2d array items
-
-final class ArrayOfArrayTest: XCTestCase {
+@Suite("Array of Array test")
+struct ArrayOfArrayTest {
     private let spec = """
     {
         "info": {
@@ -105,11 +106,12 @@ public struct ArrayItem: Codable {
 extension ArrayItem: ParentProtocol {}
 """#
 
+    @Test("child class table")
     func testChildClassTable() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "ArrayItem")
 
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedResult)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedResult)
     }
 }

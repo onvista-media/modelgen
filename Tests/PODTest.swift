@@ -4,11 +4,13 @@
 //  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
+import Foundation
 import CustomDump
-import XCTest
+import Testing
 @testable import modelgen
 
-final class PODTest: XCTestCase {
+@Suite("POD test")
+struct PODTest {
     private let spec = """
     {
         "info": {
@@ -187,19 +189,21 @@ final class PODTest: XCTestCase {
         }
         """
 
+    @Test("test POD")
     func testPOD() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
         generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
-        XCTAssertNoDifference(output, expected)
+        expectNoDifference(output, expected)
     }
 
+    @Test("test POD with defaults")
     func testPODWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foobar"], skipHeader: true))
         generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
-        XCTAssertNoDifference(output, expectedWithDefaults)
+        expectNoDifference(output, expectedWithDefaults)
     }
 }

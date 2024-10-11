@@ -5,11 +5,13 @@
 //  Created by Gereon Steffens on 03.05.24.
 //
 
+import Foundation
 import CustomDump
-import XCTest
+import Testing
 @testable import modelgen
 
-final class RequestTest: XCTestCase {
+@Suite("Request test")
+struct RequestTest {
     private let spec = """
 {
   "info": {
@@ -233,19 +235,21 @@ public struct GetStatusRequest {
 }
 """#
 
+    @Test("test request")
     func testRequest() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(tag: "testTag", skipHeader: true))
-        let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
+        let req = try #require(spec.paths?["/status"]?["get"])
         generator.generate(path: "/status", method: "GET", request: req)
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 
+    @Test("test request with defaults")
     func testRequestWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
-        let req = try XCTUnwrap(spec.paths?["/status"]?["get"])
+        let req = try #require(spec.paths?["/status"]?["get"])
         generator.generate(path: "/status", method: "GET", request: req)
-        XCTAssertNoDifference(String(generator.buffer.dropLast(1)), expectedOutputWithDefaults)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutputWithDefaults)
     }
 }
