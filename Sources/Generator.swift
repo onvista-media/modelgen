@@ -288,12 +288,15 @@ final class Generator {
         let discriminatorType = schema.properties?[discriminator.propertyName]
 
         let discriminatorIsString: Bool
+        let discriminatorTypeName: String
         switch discriminatorType {
-        case .ref:
+        case .ref(let ref):
             discriminatorIsString = false
+            discriminatorTypeName = ref.swiftType().name
         case .property(let prop):
             assert(prop.type == "string", "\(modelName): unexpected discriminator type")
             discriminatorIsString = true
+            discriminatorTypeName = "String"
         case .none:
             fatalError("\(modelName): unknown discriminator type")
         }
@@ -322,22 +325,25 @@ final class Generator {
             }
             print("")
 
+            block("enum DiscriminatorKeys: String, CodingKey") {
+                print(#"case type = "\#(discriminator.propertyName)""#)
+            }
+            print("")
+
             // init method
             block("public init(from decoder: Decoder) throws") {
+                print("let container = try decoder.container(keyedBy: DiscriminatorKeys.self)")
+                print("let type = try container.decode(\(discriminatorTypeName).self, forKey: .type)")
+                print("")
                 for dc in discriminatorCases {
                     let compare = discriminatorIsString ? #""\#(dc.rawString)""# : ".\(dc.enumCase)"
-                    print(#"if let obj = try? \#(dc.mappedModel)(from: decoder), obj.\#(discriminator.propertyName) == \#(compare) {"#)
+                    print("if type == \(compare), let obj = try? \(dc.mappedModel)(from: decoder) {")
                     indent {
                         print("self = .\(dc.enumCase)(obj)")
                     }
                     print("} else ", terminator: "")
                 }
                 block {
-                    block("enum DiscriminatorKeys: String, CodingKey") {
-                        print(#"case type = "\#(discriminator.propertyName)""#)
-                    }
-                    print("let container = try decoder.container(keyedBy: DiscriminatorKeys.self)")
-                    print("let type = try container.decode(String.self, forKey: .type)")
                     print(#"throw DecodingError.typeMismatch(\#(modelName).self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "unexpected subclass type \(type)"))"#)
                 }
             }

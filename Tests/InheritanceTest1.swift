@@ -59,17 +59,19 @@ final class InheritanceTest1: XCTestCase {
         case cat(Cat)
         case dog(Dog)
 
+        enum DiscriminatorKeys: String, CodingKey {
+            case type = "status"
+        }
+
         public init(from decoder: Decoder) throws {
-            if let obj = try? Cat(from: decoder), obj.status == .cat {
+            let container = try decoder.container(keyedBy: DiscriminatorKeys.self)
+            let type = try container.decode(AnimalType.self, forKey: .type)
+
+            if type == .cat, let obj = try? Cat(from: decoder) {
                 self = .cat(obj)
-            } else if let obj = try? Dog(from: decoder), obj.status == .dog {
+            } else if type == .dog, let obj = try? Dog(from: decoder) {
                 self = .dog(obj)
             } else {
-                enum DiscriminatorKeys: String, CodingKey {
-                    case type = "status"
-                }
-                let container = try decoder.container(keyedBy: DiscriminatorKeys.self)
-                let type = try container.decode(String.self, forKey: .type)
                 throw DecodingError.typeMismatch(Animal.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "unexpected subclass type \(type)"))
             }
         }

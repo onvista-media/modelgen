@@ -70,19 +70,21 @@ final class InheritanceTest2: XCTestCase {
         case dog(Dog)
         case animal(AnimalBase)
 
+        enum DiscriminatorKeys: String, CodingKey {
+            case type = "status"
+        }
+
         public init(from decoder: Decoder) throws {
-            if let obj = try? Cat(from: decoder), obj.status == "cat" {
+            let container = try decoder.container(keyedBy: DiscriminatorKeys.self)
+            let type = try container.decode(String.self, forKey: .type)
+
+            if type == "cat", let obj = try? Cat(from: decoder) {
                 self = .cat(obj)
-            } else if let obj = try? Dog(from: decoder), obj.status == "dog" {
+            } else if type == "dog", let obj = try? Dog(from: decoder) {
                 self = .dog(obj)
-            } else if let obj = try? AnimalBase(from: decoder), obj.status == "Animal" {
+            } else if type == "Animal", let obj = try? AnimalBase(from: decoder) {
                 self = .animal(obj)
             } else {
-                enum DiscriminatorKeys: String, CodingKey {
-                    case type = "status"
-                }
-                let container = try decoder.container(keyedBy: DiscriminatorKeys.self)
-                let type = try container.decode(String.self, forKey: .type)
                 throw DecodingError.typeMismatch(Animal.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "unexpected subclass type \(type)"))
             }
         }
