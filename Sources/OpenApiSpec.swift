@@ -1,7 +1,7 @@
 //
 //  OpenApiSpec.swift
 //
-//  Copyright © 2023 onvista media GmbH. All rights reserved.
+//  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
 struct OpenApiSpec: Decodable {
