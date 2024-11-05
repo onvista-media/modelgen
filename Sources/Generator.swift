@@ -8,13 +8,11 @@ final class Generator {
     let output = OutputBuffer()
     let schemas: [String: Schema]
     let info: Info
-    let classSchemas: Set<String>
     private var importAnyCodable = false
     let config: Config
 
-    init(spec: OpenApiSpec, classSchemas: String? = nil, config: Config) {
+    init(spec: OpenApiSpec, config: Config) {
         self.schemas = spec.components.schemas
-        self.classSchemas = Set((classSchemas ?? "").components(separatedBy: ","))
         self.info = spec.info
         self.config = config
     }
@@ -199,7 +197,7 @@ final class Generator {
     private func generateModelStruct(modelName: String, schema: Schema) {
         let properties = schema.swiftProperties(for: modelName)
 
-        let type = classSchemas.contains(modelName) ? "final class" : "struct"
+        let type = config.classSchemas.contains(modelName) ? "final class" : "struct"
         let sendable = config.sendable ? ", Sendable" : ""
         block("public \(type) \(modelName): Codable\(sendable)") {
             generateProperties(properties)

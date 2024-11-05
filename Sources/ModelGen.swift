@@ -77,6 +77,7 @@ struct ModelGen: ParsableCommand {
             includes: (self.include ?? "").split(separator: ",").map { String($0) },
             imports: (self.imports ?? "").split(separator: ",").map { String($0) },
             defaultValues: (self.defaultValues ?? "").split(separator: ",").map { String($0) },
+            classSchemas: Set((self.classSchemas ?? "").split(separator: ",").map { String($0) }),
             tag: addTag,
             sendable: sendable,
             skipHeader: false
@@ -90,7 +91,7 @@ struct ModelGen: ParsableCommand {
                         continue
                     }
                     if config.includes.isEmpty || config.includes.contains(name) {
-                        let generator = Generator(spec: spec, classSchemas: classSchemas, config: config)
+                        let generator = Generator(spec: spec, config: config)
                         generator.generate(path: path, method: method, request: request)
 
                         try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
@@ -104,7 +105,7 @@ struct ModelGen: ParsableCommand {
                 continue
             }
             if config.includes.isEmpty || config.includes.contains(name) {
-                let generator = Generator(spec: spec, classSchemas: classSchemas, config: config)
+                let generator = Generator(spec: spec, config: config)
                 generator.generate(modelName: name)
 
                 try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
