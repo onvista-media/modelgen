@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.14"
+    static let version = "v0.1.15"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
