@@ -359,8 +359,12 @@ final class Generator {
             // make method
             print("")
             block("public static func make() -> Self") {
-                guard let first = discriminatorCases.first else { return }
-                print(".\(first.enumCase)(.make())")
+                if createBaseType {
+                    print(".\(modelName.camelCased())(.make())")
+                } else {
+                    guard let first = discriminatorCases.first else { return }
+                    print(".\(first.enumCase)(.make())")
+                }
             }
         }
 

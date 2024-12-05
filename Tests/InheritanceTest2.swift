@@ -99,7 +99,7 @@ struct InheritanceTest2 {
         }
 
         public static func make() -> Self {
-            .cat(.make())
+            .animal(.make())
         }
     }
 
