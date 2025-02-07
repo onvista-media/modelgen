@@ -8,7 +8,7 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request) -> Bool {
+    func generate(path: String, method: String, request: Request) throws {
         let name = request.operationId.uppercasedFirst() + "Request"
 
         if !config.skipHeader {
@@ -16,7 +16,7 @@ extension Generator {
             generateFileHeader(modelName: name, schema: nil, imports: imports.sorted(by: <))
         }
 
-        let (_, successType, _) = successValues(for: request)
+        let (_, successType, _) = try successValues(for: request)
 
         comment(request.operationId + ": " + method.uppercased() + " " + path + " -> " + successType)
         if request.deprecated == true {
@@ -24,7 +24,7 @@ extension Generator {
         }
         let tags = (request.tags + [ config.tag ]).compactMap { $0 }
         let sendable = config.sendable ? ": Sendable" : ""
-        return block("public struct \(name)\(sendable)") {
+        try block("public struct \(name)\(sendable)") {
             print("static let path = \"\(path)\"")
             print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")
@@ -54,21 +54,21 @@ extension Generator {
 
             let parameters = (request.parameters ?? [])
                 .sorted { $0.name.lowercased() < $1.name.lowercased() }
-            generateInit(method: method, request: request, parameters: parameters, defaultValues: config.defaultValues, bodyType: bodyType)
+            do {
+                try generateInit(method: method, request: request, parameters: parameters, defaultValues: config.defaultValues, bodyType: bodyType)
 
-            print("")
-            let didGenerateResponse = generateResponseEnum(request: request)
+                print("")
+                try generateResponseEnum(request: request)
 
-            print("")
-            generateExecute(request: request)
+                print("")
+                try generateExecute(request: request)
 
-            print("")
-            generateGet(request: request)
+                print("")
+                try generateGet(request: request)
 
-            print("")
-            generateResult(request: request)
-
-            return didGenerateResponse
+                print("")
+                try generateResult(request: request)
+            }
         }
     }
 
@@ -91,9 +91,9 @@ extension Generator {
         }
     }
 
-    private func generateInit(method: String, request: Request, parameters: [Parameter], defaultValues: [String], bodyType: SwiftType?) {
-        var params = parameters.map {
-            ($0.name.camelCased(), $0.schema.swiftType(for: "", $0.name, $0.required == true))
+    private func generateInit(method: String, request: Request, parameters: [Parameter], defaultValues: [String], bodyType: SwiftType?) throws {
+        var params = try parameters.map {
+            ($0.name.camelCased(), try $0.schema.swiftType(for: "", $0.name, $0.required == true))
         }
 
         if let bodyType {
@@ -109,7 +109,7 @@ extension Generator {
         }
         initParameters.append("useCache: Bool = true")
 
-        block("public init(\(initParameters.joined(separator: ", ")))") {
+        try block("public init(\(initParameters.joined(separator: ", ")))") {
             print("let path = Self.path")
             for param in parameters.filter({ $0.in == "path" }) {
                 indent {
@@ -122,7 +122,7 @@ extension Generator {
             if !queryParams.isEmpty {
                 print("var queryItems = [URLQueryItem?]()")
                 for param in queryParams {
-                    let type = param.schema.swiftType(for: "", param.name, param.required == true)
+                    let type = try param.schema.swiftType(for: "", param.name, param.required == true)
                     if type.qualifier == .array && type.isOptional {
                         print(#"queryItems.append(contentsOf: (\#(param.name.camelCased()) ?? []).map { URLQueryItem(name: "\#(param.name)", value: $0) })"#)
                     } else if type.qualifier == .array {
@@ -171,9 +171,9 @@ extension Generator {
         }
     }
 
-    private func generateResponseEnum(request: Request) -> Bool {
+    private func generateResponseEnum(request: Request) throws {
         let sendable = config.sendable ? ": Sendable" : ""
-        return block("public enum Response\(sendable)") {
+        try block("public enum Response\(sendable)") {
             var didGenerateOk = false
             for (code, response) in request.sortedResponses {
                 if code == "204" {
@@ -185,7 +185,7 @@ extension Generator {
                         print("case \(responseCase(for: code))(\(type.swiftType().name))")
                     case .schema(let schema):
                         let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
-                        print("case \(responseCase(for: code))(\(prop.swiftType(for: "", "").name))")
+                        print("case \(responseCase(for: code))(\(try prop.swiftType(for: "", "").name))")
                     }
                     didGenerateOk = didGenerateOk || ["200", "201", "204", "default"].contains(code)
                 } else if code == "200" {
@@ -197,13 +197,15 @@ extension Generator {
             print("case undocumented(Int, Data)")
             print("case error(Error)")
             print("case invalid(Error)")
-            return didGenerateOk
+            if !didGenerateOk {
+                throw TypeError.noResponseType
+            }
         }
     }
 
-    private func generateExecute(request: Request) {
+    private func generateExecute(request: Request) throws {
         comment("return decoded response, raw data and HTTP headers")
-        block("public func execute() async -> (Response, Data?, HTTPURLResponse?)") {
+        try block("public func execute() async -> (Response, Data?, HTTPURLResponse?)") {
             print("let data: Data")
             print("let response: HTTPURLResponse")
             block("do") {
@@ -216,8 +218,8 @@ extension Generator {
             block("catch") {
                 print("return (.error(error), nil, nil)")
             }
-            block("do") {
-                block("switch response.statusCode") {
+            try block("do") {
+                try block("switch response.statusCode") {
                     for (code, response) in request.sortedResponses {
                         if code == "204" {
                             print("case 204: return (.ok, data, response)")
@@ -229,7 +231,7 @@ extension Generator {
                                 print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
                             case .schema(let schema):
                                 let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
-                                let type = prop.swiftType(for: "", "").name
+                                let type = try prop.swiftType(for: "", "").name
                                 print("case \(caseCode): return (.\(responseCase(for: code))(try jsonDecoder.decode(\(type).self, from: data)), data, response)")
                             }
                         } else if code == "200" {
@@ -245,7 +247,7 @@ extension Generator {
         }
     }
 
-    private func successValues(for request: Request) -> (code: String, type: String, Response?) {
+    private func successValues(for request: Request) throws -> (code: String, type: String, Response?) {
         var successType = "()"
         var successCode = "200"
         var successResponse = request.responses["default"] ?? request.responses["200"]
@@ -266,7 +268,7 @@ extension Generator {
                     successType = type.swiftType().name
                 case .schema(let schema):
                     let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
-                    successType = prop.swiftType(for: "", "").name
+                    successType = try prop.swiftType(for: "", "").name
                 }
             } else {
                 successType = "Data"
@@ -276,8 +278,8 @@ extension Generator {
         return (successCode, successType, successResponse)
     }
 
-    private func generateGet(request: Request) {
-        let (successCode, successType, successResponse) = successValues(for: request)
+    private func generateGet(request: Request) throws {
+        let (successCode, successType, successResponse) = try successValues(for: request)
 
         comment("return \(successType) or nil")
         block("public func get() async -> \(successType)?") {
@@ -298,8 +300,8 @@ extension Generator {
         }
     }
 
-    private func generateResult(request: Request) {
-        let (successCode, successType, successResponse) = successValues(for: request)
+    private func generateResult(request: Request) throws {
+        let (successCode, successType, successResponse) = try successValues(for: request)
 
         let errorResponses = request.responses
             .filter {

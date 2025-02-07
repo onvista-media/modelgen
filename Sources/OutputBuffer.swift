@@ -23,20 +23,20 @@ final class OutputBuffer {
         buffer += pad + string + terminator
     }
 
-    func indent<T>(closure: () -> T) -> T {
+    func indent<T>(closure: () throws -> T) rethrows -> T {
         indent += 1
-        let result = closure()
+        let result = try closure()
         indent -= 1
         return result
     }
 
-    func block<T>(_ string: String? = nil, closure: () -> T) -> T {
+    func block<T>(_ string: String? = nil, closure: () throws -> T) rethrows -> T {
         if let string {
             print(string + " ", terminator: "")
         }
         print("{")
-        let result = indent {
-            closure()
+        let result = try indent {
+            try closure()
         }
         print("}")
         return result

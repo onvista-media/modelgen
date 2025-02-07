@@ -35,18 +35,16 @@ struct SwiftType {
     let isOptional: Bool
     let isCustom: Bool
     let qualifier: CollectionQualifier
-    let isAnyCodable: Bool
 
     enum CollectionQualifier {
         case scalar, array, dictionary
     }
 
-    init(name: String, isOptional: Bool, isCustom: Bool, qualifier: CollectionQualifier, isAnyCodable: Bool = false) {
+    init(name: String, isOptional: Bool, isCustom: Bool, qualifier: CollectionQualifier) {
         self.name = SwiftKeywords.safe(name)
         self.isOptional = isOptional
         self.isCustom = isCustom
         self.qualifier = qualifier
-        self.isAnyCodable = isAnyCodable
     }
 
     var propertyType: String {
@@ -82,4 +80,9 @@ struct SwiftType {
             }
         }
     }
+}
+
+enum TypeError: Error {
+    case noResponseType
+    case unknownPropertyType
 }

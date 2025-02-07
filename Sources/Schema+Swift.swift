@@ -5,20 +5,20 @@
 //
 
 extension Schema {
-    func swiftProperties(for modelName: String, parentRequired: [String]? = nil) -> [SwiftProperty] {
+    func swiftProperties(for modelName: String, parentRequired: [String]? = nil) throws -> [SwiftProperty] {
         guard let properties else {
             return []
         }
 
         let required = (self.required ?? []) + (parentRequired ?? [])
 
-        return properties
+        return try properties
             .sorted(by: { $0.key < $1.key })
             .map { name, value in
                 let required = required.contains(name) == true
                 switch value {
                 case .property(let prop):
-                    let type = prop.swiftType(for: modelName, name, required)
+                    let type = try prop.swiftType(for: modelName, name, required)
                     return SwiftProperty(name: name,
                                          type: type,
                                          comment: prop.description,

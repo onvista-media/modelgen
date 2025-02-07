@@ -144,7 +144,7 @@ extension Dog: AnimalProtocol {}
     func testBaseClass() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
-        generator.generate(modelName: "Animal")
+        try generator.generate(modelName: "Animal")
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedBase)
     }
 
@@ -152,7 +152,7 @@ extension Dog: AnimalProtocol {}
     func testChildClassDog() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
-        generator.generate(modelName: "Dog")
+        try generator.generate(modelName: "Dog")
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedDog)
     }
 }

@@ -47,7 +47,7 @@ struct EnumTest {
     func testEnum() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
-        generator.generate(modelName: "Enum")
+        try generator.generate(modelName: "Enum")
         expectNoDifference(String(generator.buffer.dropLast(1)), expected)
     }
 

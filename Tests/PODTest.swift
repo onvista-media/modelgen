@@ -193,7 +193,7 @@ struct PODTest {
     func testPOD() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .test)
-        generator.generate(modelName: "POD")
+        try generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         expectNoDifference(output, expected)
     }
@@ -202,7 +202,7 @@ struct PODTest {
     func testPODWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foobar"], skipHeader: true))
-        generator.generate(modelName: "POD")
+        try generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         expectNoDifference(output, expectedWithDefaults)
     }

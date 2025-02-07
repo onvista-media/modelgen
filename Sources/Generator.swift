@@ -8,7 +8,6 @@ final class Generator {
     let output = OutputBuffer()
     let schemas: [String: Schema]
     let info: Info
-    private var importAnyCodable = false
     let config: Config
 
     init(spec: OpenApiSpec, config: Config) {
@@ -21,7 +20,7 @@ final class Generator {
         output.buffer
     }
 
-    func generate(modelName: String) {
+    func generate(modelName: String) throws {
         guard let schema = schemas[modelName] else {
             fatalError("\(modelName): schema not found")
         }
@@ -32,20 +31,15 @@ final class Generator {
             generateFileHeader(modelName: modelName, schema: schema, imports: config.imports)
         }
         if schema.discriminator != nil {
-            generateModelEnum(modelName: modelName, schema: schema)
+            try generateModelEnum(modelName: modelName, schema: schema)
         } else if schema.properties != nil {
-            generateModelStruct(modelName: modelName, schema: schema)
+            try generateModelStruct(modelName: modelName, schema: schema)
         } else if schema.allOf != nil {
-            generateCompositeStruct(modelName: modelName, schema: schema)
+            try generateCompositeStruct(modelName: modelName, schema: schema)
         } else if schema.enumCases != nil {
             generateSimpleEnum(modelName: modelName, schema: schema)
         } else {
             fatalError("\(modelName): don't know how to handle this schema")
-        }
-
-        if importAnyCodable {
-            print("")
-            print("import AnyCodable")
         }
     }
 
@@ -81,12 +75,12 @@ final class Generator {
         generateEnum(name: modelName, cases: cases)
     }
 
-    private func joinAllProperties(for modelName: String, allOf: [RefOrSchema], parentSchema: Schema) -> [SwiftProperty] {
+    private func joinAllProperties(for modelName: String, allOf: [RefOrSchema], parentSchema: Schema) throws -> [SwiftProperty] {
         var properties = [SwiftProperty]()
         for refOrSchema in allOf {
             switch refOrSchema {
             case .schema(let schema):
-                properties.append(contentsOf: schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
+                properties.append(contentsOf: try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
             case .ref(let ref):
                 let refType = ref.swiftType()
                 guard let schema = schemas[refType.name] else {
@@ -95,25 +89,26 @@ final class Generator {
                 if schema.allOf != nil {
                     fatalError("\(modelName): multi-level interitance is not supported")
                 }
-                properties.append(contentsOf: schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
+                properties.append(contentsOf: try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required))
             }
         }
         return properties
     }
 
-    private func generateAllOf(for modelName: String,
-                               allOf: [RefOrSchema],
-                               addComment: Bool,
-                               parentSchema: Schema,
-                               generateProperties: ([SwiftProperty]) -> Void
-    ) {
+    private func generateAllOf(
+        for modelName: String,
+        allOf: [RefOrSchema],
+        addComment: Bool,
+        parentSchema: Schema,
+        generateProperties: ([SwiftProperty]) -> Void
+    ) throws {
         for refOrSchema in allOf {
             switch refOrSchema {
             case .schema(let schema):
                 if addComment {
                     comment("MARK: - \(modelName) properties")
                 }
-                let properties = schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
+                let properties = try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
                 generateProperties(properties)
             case .ref(let ref):
                 let refType = ref.swiftType()
@@ -126,52 +121,52 @@ final class Generator {
                 if schema.allOf != nil {
                     fatalError("\(modelName): multi-level interitance is not supported")
                 }
-                let properties = schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
+                let properties = try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
                 generateProperties(properties)
             }
         }
     }
 
     // MARK: - composite struct aka child class
-    private func generateCompositeStruct(modelName: String, schema: Schema) {
+    private func generateCompositeStruct(modelName: String, schema: Schema) throws {
         guard let allOf = schema.allOf else {
             fatalError("\(modelName) has no allOf values")
         }
 
         let sendable = config.sendable ? ", Sendable" : ""
-        block("public struct \(modelName): Codable\(sendable)") {
-            generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
+        try block("public struct \(modelName): Codable\(sendable)") {
+            try generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
                 generateProperties($0)
             }
 
             // init method
             print("public init(", terminator: "")
             var sep = ""
-            generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+            try generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
                 print(sep, terminator: "")
                 generateParameters($0, defaultValues: config.defaultValues)
                 sep = ", "
             }
 
-            block(")") {
-                generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
+            try block(")") {
+                try generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
                     generateAssignments($0)
                 }
             }
 
             // codingkeys
             print("")
-            block("enum CodingKeys: String, CodingKey") {
-                generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+            try block("enum CodingKeys: String, CodingKey") {
+                try generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
                     generateCodingKeyCases($0)
                 }
             }
 
             // init(from: Decoder)
             print("")
-            block("public init(from decoder: Decoder) throws") {
+            try block("public init(from decoder: Decoder) throws") {
                 print("let container = try decoder.container(keyedBy: CodingKeys.self)")
-                generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+                try generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
                     generateInitFromDecoderAssignments($0)
                 }
             }
@@ -183,7 +178,7 @@ final class Generator {
             }
 
             // static func make()
-            generateMakeMethod(joinAllProperties(for: modelName, allOf: allOf, parentSchema: schema))
+            try generateMakeMethod(joinAllProperties(for: modelName, allOf: allOf, parentSchema: schema))
         }
 
         if let ref = getRef(from: allOf) {
@@ -194,8 +189,8 @@ final class Generator {
     }
 
     // MARK: - model struct
-    private func generateModelStruct(modelName: String, schema: Schema) {
-        let properties = schema.swiftProperties(for: modelName)
+    private func generateModelStruct(modelName: String, schema: Schema) throws {
+        let properties = try schema.swiftProperties(for: modelName)
 
         let type = config.classSchemas.contains(modelName) ? "final class" : "struct"
         let sendable = config.sendable ? ", Sendable" : ""
@@ -269,20 +264,16 @@ final class Generator {
             } else {
                 print("(\(type.baseType).self, forKey: .\(prop.name))")
             }
-
-            if type.isAnyCodable {
-                importAnyCodable = true
-            }
         }
     }
 
     // MARK: - model enum aka base class
-    private func generateModelEnum(modelName: String, schema: Schema) {
+    private func generateModelEnum(modelName: String, schema: Schema) throws {
         guard let discriminator = schema.discriminator else {
             fatalError("\(modelName) has no discriminator")
         }
 
-        let properties = schema.swiftProperties(for: modelName)
+        let properties = try schema.swiftProperties(for: modelName)
         let discriminatorType = schema.properties?[discriminator.propertyName]
 
         let discriminatorIsString: Bool
@@ -392,7 +383,7 @@ final class Generator {
 
         if createBaseType {
             print("")
-            generateModelStruct(modelName: "\(modelName)Base", schema: schema)
+            try generateModelStruct(modelName: "\(modelName)Base", schema: schema)
             print("")
             print("extension \(modelName)Base: \(modelName)Protocol {}")
         }
@@ -498,8 +489,8 @@ extension Generator {
         output.indent(closure: closure)
     }
 
-    func block<T>(_ str: String? = nil, closure: () -> T) -> T {
-        output.block(str, closure: closure)
+    func block<T>(_ str: String? = nil, closure: () throws -> T) rethrows -> T {
+        try output.block(str, closure: closure)
     }
 
     func comment(_ str: String?) {

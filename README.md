@@ -127,5 +127,5 @@ for further examples, see the various unit tests.
 
 ## Dependencies
 
-The generated code may contain references to types that are not included in the output.
-These types are `UnknownCaseRepresentable`, `LossyDecodableArray` and `AnyCodable`. Sample implementations for the first two are found in the `Sources/Support` directory of this repo. For `AnyCodable`, we recommend adding `https://github.com/Flight-School/AnyCodable` to your package dependencies.
+The generated code for models may contain references to types that are not included in the output.
+These types are `UnknownCaseRepresentable` and `LossyDecodableArray`. Sample implementations for the first two are found in the `Sources/Support` directory of this repo.

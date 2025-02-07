@@ -240,8 +240,7 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(tag: "testTag", skipHeader: true))
         let req = try #require(spec.paths?["/status"]?["get"])
-        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
-        #expect(didGenerate)
+        try generator.generate(path: "/status", method: "GET", request: req)
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 
@@ -250,8 +249,7 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
         let req = try #require(spec.paths?["/status"]?["get"])
-        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
-        #expect(didGenerate)
+        try generator.generate(path: "/status", method: "GET", request: req)
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutputWithDefaults)
     }
 
@@ -261,7 +259,8 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: newSpec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
         let req = try #require(spec.paths?["/status"]?["get"])
-        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
-        #expect(!didGenerate)
+        #expect(throws: TypeError.self) {
+            try generator.generate(path: "/status", method: "GET", request: req)
+        }
     }
 }

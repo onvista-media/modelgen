@@ -5,12 +5,10 @@
 //
 
 extension Property {
-    func swiftType(for modelName: String, _ propertyName: String, _ required: Bool = true) -> SwiftType {
-        let rawType = rawSwiftType(for: modelName, propertyName)
+    func swiftType(for modelName: String, _ propertyName: String, _ required: Bool = true) throws -> SwiftType {
+        let rawType = try rawSwiftType(for: modelName, propertyName)
 
         switch rawType {
-        case .anyCodable:
-            return SwiftType(name: "AnyCodable", isOptional: !required, isCustom: false, qualifier: .scalar, isAnyCodable: true)
         case .builtInScalar(let type):
             return SwiftType(name: type, isOptional: !required, isCustom: false, qualifier: .scalar)
         case .builtInArray(let type):
@@ -25,7 +23,6 @@ extension Property {
     }
 
     private enum Kind {
-        case anyCodable
         case builtInScalar(String)
         case builtInArray(String)
         case builtInDictionary(String)
@@ -33,7 +30,7 @@ extension Property {
         case customArray(String)
     }
 
-    private func rawSwiftType(for modelName: String, _ propertyName: String) -> Kind {
+    private func rawSwiftType(for modelName: String, _ propertyName: String) throws -> Kind {
         if enumCases != nil {
             if type == "array" {
                 return .builtInArray("String")
@@ -46,7 +43,7 @@ extension Property {
         case "array":
             switch items {
             case .property(let prop):
-                let type = prop.swiftType(for: modelName, propertyName)
+                let type = try prop.swiftType(for: modelName, propertyName)
                 switch type.qualifier {
                 case .array:
                     return .builtInArray("[\(type.name)]")
@@ -72,7 +69,7 @@ extension Property {
             if let additionalProperties = self.additionalProperties {
                 switch additionalProperties {
                 case .property(let prop):
-                    let inner = prop.rawSwiftType(for: modelName, propertyName)
+                    let inner = try prop.rawSwiftType(for: modelName, propertyName)
                     switch inner {
                     case .builtInScalar(let type):
                         return .builtInDictionary("[String: \(type)]")
@@ -84,15 +81,13 @@ extension Property {
                         return .custom(type)
                     case .customArray(let type):
                         return .customArray(type)
-                    case .anyCodable:
-                        return .anyCodable
                     }
                 case .ref(let ref):
                     let refType = ref.swiftType()
                     return .builtInDictionary("[String: \(refType.propertyType)]")
                 }
             } else {
-                return .anyCodable
+                throw TypeError.unknownPropertyType
             }
 
         case "string":
