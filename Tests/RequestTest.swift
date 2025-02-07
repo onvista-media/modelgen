@@ -240,7 +240,8 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(tag: "testTag", skipHeader: true))
         let req = try #require(spec.paths?["/status"]?["get"])
-        generator.generate(path: "/status", method: "GET", request: req)
+        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
+        #expect(didGenerate)
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutput)
     }
 
@@ -249,7 +250,18 @@ public struct GetStatusRequest {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
         let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
         let req = try #require(spec.paths?["/status"]?["get"])
-        generator.generate(path: "/status", method: "GET", request: req)
+        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
+        #expect(didGenerate)
         expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutputWithDefaults)
+    }
+
+    @Test("test request w/o OK response")
+    func testRequestWithoutOKResponse() throws {
+        let newSpec = spec.replacingOccurrences(of: "\"default\"", with: "\"500\"")
+        let spec = try JSONDecoder().decode(OpenApiSpec.self, from: newSpec.data(using: .utf8)!)
+        let generator = Generator(spec: spec, config: .init(defaultValues: ["foo"], tag: "testTag", skipHeader: true))
+        let req = try #require(spec.paths?["/status"]?["get"])
+        let didGenerate = generator.generate(path: "/status", method: "GET", request: req)
+        #expect(!didGenerate)
     }
 }

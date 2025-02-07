@@ -8,7 +8,7 @@
 import Foundation
 
 extension Generator {
-    func generate(path: String, method: String, request: Request) {
+    func generate(path: String, method: String, request: Request) -> Bool {
         let name = request.operationId.uppercasedFirst() + "Request"
 
         if !config.skipHeader {
@@ -24,7 +24,7 @@ extension Generator {
         }
         let tags = (request.tags + [ config.tag ]).compactMap { $0 }
         let sendable = config.sendable ? ": Sendable" : ""
-        block("public struct \(name)\(sendable)") {
+        return block("public struct \(name)\(sendable)") {
             print("static let path = \"\(path)\"")
             print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")
@@ -57,7 +57,7 @@ extension Generator {
             generateInit(method: method, request: request, parameters: parameters, defaultValues: config.defaultValues, bodyType: bodyType)
 
             print("")
-            generateResponseEnum(request: request)
+            let didGenerateResponse = generateResponseEnum(request: request)
 
             print("")
             generateExecute(request: request)
@@ -67,6 +67,8 @@ extension Generator {
 
             print("")
             generateResult(request: request)
+
+            return didGenerateResponse
         }
     }
 
@@ -169,12 +171,14 @@ extension Generator {
         }
     }
 
-    private func generateResponseEnum(request: Request) {
+    private func generateResponseEnum(request: Request) -> Bool {
         let sendable = config.sendable ? ": Sendable" : ""
-        block("public enum Response\(sendable)") {
+        return block("public enum Response\(sendable)") {
+            var didGenerateOk = false
             for (code, response) in request.sortedResponses {
                 if code == "204" {
                     print("case ok // 204 no content")
+                    didGenerateOk = true
                 } else if let schema = response.content?["application/json"]?.schema {
                     switch schema {
                     case .ref(let type):
@@ -183,14 +187,17 @@ extension Generator {
                         let prop = Property(type: schema.type, description: nil, format: nil, items: nil, deprecated: nil, enumCases: nil, additionalProperties: nil)
                         print("case \(responseCase(for: code))(\(prop.swiftType(for: "", "").name))")
                     }
+                    didGenerateOk = didGenerateOk || ["200", "201", "204", "default"].contains(code)
                 } else if code == "200" {
                     print("case ok(Data)")
+                    didGenerateOk = true
                 }
             }
             print("")
             print("case undocumented(Int, Data)")
             print("case error(Error)")
             print("case invalid(Error)")
+            return didGenerateOk
         }
     }
 

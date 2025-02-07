@@ -9,7 +9,7 @@ import ArgumentParser
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.16"
+    static let version = "v0.1.17"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
@@ -92,9 +92,13 @@ struct ModelGen: ParsableCommand {
                     }
                     if config.includes.isEmpty || config.includes.contains(name) {
                         let generator = Generator(spec: spec, config: config)
-                        generator.generate(path: path, method: method, request: request)
+                        let didGenerateRequest = generator.generate(path: path, method: method, request: request)
 
-                        try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
+                        if didGenerateRequest {
+                            try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
+                        } else {
+                            Swift.print("no response type for \(name)Request could be generated - skipping")
+                        }
                     }
                 }
             }

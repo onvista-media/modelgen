@@ -498,7 +498,7 @@ extension Generator {
         output.indent(closure: closure)
     }
 
-    func block(_ str: String? = nil, closure: () -> Void) {
+    func block<T>(_ str: String? = nil, closure: () -> T) -> T {
         output.block(str, closure: closure)
     }
 
