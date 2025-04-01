@@ -85,12 +85,6 @@ public struct ArrayItem: Codable {
         self.rows = rows
     }
 
-    enum CodingKeys: String, CodingKey {
-        case type = "type"
-        case headlineType = "headlineType"
-        case rows = "rows"
-    }
-
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.type = try container.decode(String.self, forKey: .type)

@@ -49,11 +49,6 @@ struct EnumTest2 {
             self.bEnum = bEnum
         }
 
-        enum CodingKeys: String, CodingKey {
-            case aEnum = "aEnum"
-            case bEnum = "bEnum"
-        }
-
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.aEnum = try container.decodeIfPresent(AEnum.self, forKey: .aEnum)

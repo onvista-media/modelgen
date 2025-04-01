@@ -67,6 +67,7 @@ enum SwiftKeywords {
         "is",
         "nil",
         "super",
-        "self"
+        "self",
+        "_"
     ])
 }

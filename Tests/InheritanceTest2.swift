@@ -125,10 +125,6 @@ struct InheritanceTest2 {
             self.status = status
         }
 
-        enum CodingKeys: String, CodingKey {
-            case status = "status"
-        }
-
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.status = try container.decode(String.self, forKey: .status)
@@ -162,13 +158,6 @@ public struct Dog: Codable {
         self.array = array
         self.barks = barks
         self.foobar = foobar
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case status = "status"
-        case array = "array"
-        case barks = "barks"
-        case foobar = "foobar"
     }
 
     public init(from decoder: Decoder) throws {

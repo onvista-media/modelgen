@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
-        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.55.1"),
+        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.58.2"),
         .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.3.0")
     ],
     targets: [

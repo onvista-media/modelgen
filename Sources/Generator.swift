@@ -155,10 +155,12 @@ final class Generator {
             }
 
             // codingkeys
-            print("")
-            try block("enum CodingKeys: String, CodingKey") {
-                try generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
-                    generateCodingKeyCases($0)
+            if try codingKeysNeeded(for: modelName, allOf: allOf, parentSchema: schema) {
+                print("")
+                try block("enum CodingKeys: String, CodingKey") {
+                    try generateAllOf(for: modelName, allOf: allOf, addComment: false, parentSchema: schema) {
+                        generateCodingKeyCases($0)
+                    }
                 }
             }
 
@@ -188,6 +190,40 @@ final class Generator {
         }
     }
 
+    private func codingKeysNeeded(for modelName: String, allOf: [RefOrSchema], parentSchema: Schema) throws -> Bool {
+        for refOrSchema in allOf {
+            let properties: [SwiftProperty]
+
+            switch refOrSchema {
+            case .schema(let schema):
+                properties = try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
+            case .ref(let ref):
+                let refType = ref.swiftType()
+                guard let schema = schemas[refType.name] else {
+                    fatalError("\(modelName): no schema for \(refType) found")
+                }
+                if schema.allOf != nil {
+                    fatalError("\(modelName): multi-level interitance is not supported")
+                }
+                properties = try schema.swiftProperties(for: modelName, parentRequired: parentSchema.required)
+            }
+
+            if codingKeysNeeded(for: properties) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func codingKeysNeeded(for properties: [SwiftProperty]) -> Bool {
+        for prop in properties {
+            if prop.name != prop.specName {
+                return true
+            }
+        }
+        return false
+    }
+
     // MARK: - model struct
     private func generateModelStruct(modelName: String, schema: Schema) throws {
         let properties = try schema.swiftProperties(for: modelName)
@@ -204,8 +240,10 @@ final class Generator {
                 generateAssignments(properties)
             }
 
-            print("")
-            generateCodingKeys(properties)
+            if codingKeysNeeded(for: properties) {
+                print("")
+                generateCodingKeys(properties)
+            }
 
             print("")
             generateInitFromDecoder(properties)
