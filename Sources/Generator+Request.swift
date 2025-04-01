@@ -20,7 +20,11 @@ extension Generator {
 
         comment(request.operationId + ": " + method.uppercased() + " " + path + " -> " + successType)
         if request.deprecated == true {
-            print("@available(*, deprecated)")
+            if config.annotateDeprecation {
+                print("@available(*, deprecated)")
+            } else {
+                comment("deprecated")
+            }
         }
         let tags = (request.tags + [ config.tag ]).compactMap { $0 }
         let sendable = config.sendable ? ": Sendable" : ""

@@ -43,6 +43,9 @@ struct ModelGen: ParsableCommand {
     @Flag(name: .long, help: "add `Sendable` conformance")
     var sendable: Bool = false
 
+    @Flag(name: .long, help: "generate @available annotation for deprecated properties (default: add a comment)")
+    var annotateDeprecation: Bool = false
+
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
         output = NSString(string: output).expandingTildeInPath
@@ -80,7 +83,8 @@ struct ModelGen: ParsableCommand {
             classSchemas: Set((self.classSchemas ?? "").split(separator: ",").map { String($0) }),
             tag: addTag,
             sendable: sendable,
-            skipHeader: false
+            skipHeader: false,
+            annotateDeprecation: annotateDeprecation
         )
 
         if let paths = spec.paths {

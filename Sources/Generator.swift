@@ -342,7 +342,11 @@ final class Generator {
         }
 
         if schema.deprecated == true {
-            print("@available(*, deprecated)")
+            if config.annotateDeprecation {
+                print("@available(*, deprecated)")
+            } else {
+                comment("deprecated")
+            }
         }
         let sendable = config.sendable ? ", Sendable" : ""
         block("public enum \(modelName): Codable\(sendable)") {
@@ -481,7 +485,11 @@ final class Generator {
         for prop in properties {
             comment(prop.comment)
             if prop.deprecated {
-                comment("deprecated")
+                if config.annotateDeprecation {
+                    print("@available(*, deprecated)")
+                } else {
+                    comment("deprecated")
+                }
             }
             print("public let \(prop.name): \(prop.type.propertyType)")
             print("")

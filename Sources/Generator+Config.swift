@@ -14,6 +14,7 @@ extension Generator {
         let tag: String?
         let sendable: Bool
         let skipHeader: Bool
+        let annotateDeprecation: Bool
 
         init(
             excludes: [String] = [],
@@ -23,7 +24,8 @@ extension Generator {
             classSchemas: Set<String> = [],
             tag: String? = nil,
             sendable: Bool = false,
-            skipHeader: Bool = false
+            skipHeader: Bool = false,
+            annotateDeprecation: Bool = false
         ) {
             self.excludes = excludes
             self.includes = includes
@@ -33,6 +35,7 @@ extension Generator {
             self.tag = tag
             self.sendable = sendable
             self.skipHeader = skipHeader
+            self.annotateDeprecation = annotateDeprecation
         }
 
         static let test = Self(skipHeader: true)
