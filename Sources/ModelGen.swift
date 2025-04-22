@@ -7,9 +7,11 @@
 import Foundation
 import ArgumentParser
 
+extension Generator.DeprecationHandling: ExpressibleByArgument { }
+
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.20"
+    static let version = "v0.1.21"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
@@ -43,8 +45,8 @@ struct ModelGen: ParsableCommand {
     @Flag(name: .long, help: "add `Sendable` conformance")
     var sendable: Bool = false
 
-    @Flag(name: .long, help: "generate @available annotation for deprecated properties (default: add a comment)")
-    var annotateDeprecation: Bool = false
+    @Option(name: .long, help: "how to handle deprecated properties (comment/annotate/private) (default: comment)")
+    var deprecation: Generator.DeprecationHandling = .comment
 
     mutating func validate() throws {
         input = NSString(string: input).expandingTildeInPath
@@ -84,7 +86,7 @@ struct ModelGen: ParsableCommand {
             tag: addTag,
             sendable: sendable,
             skipHeader: false,
-            annotateDeprecation: annotateDeprecation
+            deprecation: deprecation
         )
 
         if let paths = spec.paths {

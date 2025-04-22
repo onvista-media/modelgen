@@ -5,6 +5,12 @@
 //
 
 extension Generator {
+    enum DeprecationHandling: String {
+        case comment
+        case annotate
+        case `private`
+    }
+
     struct Config {
         let excludes: [String]
         let includes: [String]
@@ -14,7 +20,7 @@ extension Generator {
         let tag: String?
         let sendable: Bool
         let skipHeader: Bool
-        let annotateDeprecation: Bool
+        let deprecation: DeprecationHandling
 
         init(
             excludes: [String] = [],
@@ -25,7 +31,7 @@ extension Generator {
             tag: String? = nil,
             sendable: Bool = false,
             skipHeader: Bool = false,
-            annotateDeprecation: Bool = false
+            deprecation: DeprecationHandling = .comment
         ) {
             self.excludes = excludes
             self.includes = includes
@@ -35,7 +41,7 @@ extension Generator {
             self.tag = tag
             self.sendable = sendable
             self.skipHeader = skipHeader
-            self.annotateDeprecation = annotateDeprecation
+            self.deprecation = deprecation
         }
 
         static let test = Self(skipHeader: true)

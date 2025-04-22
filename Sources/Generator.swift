@@ -341,15 +341,9 @@ final class Generator {
             discriminatorCases = discriminator.swiftCases
         }
 
-        if schema.deprecated == true {
-            if config.annotateDeprecation {
-                print("@available(*, deprecated)")
-            } else {
-                comment("deprecated")
-            }
-        }
+        let access = handleDeprecation(schema.deprecated)
         let sendable = config.sendable ? ", Sendable" : ""
-        block("public enum \(modelName): Codable\(sendable)") {
+        block("\(access) enum \(modelName): Codable\(sendable)") {
             // enum cases
             for dc in discriminatorCases {
                 print("case \(dc.enumCase)(\(dc.mappedModel))")
@@ -484,14 +478,8 @@ final class Generator {
     private func generateProperties(_ properties: [SwiftProperty]) {
         for prop in properties {
             comment(prop.comment)
-            if prop.deprecated {
-                if config.annotateDeprecation {
-                    print("@available(*, deprecated)")
-                } else {
-                    comment("deprecated")
-                }
-            }
-            print("public let \(prop.name): \(prop.type.propertyType)")
+            let access = handleDeprecation(prop.deprecated)
+            print("\(access) let \(prop.name): \(prop.type.propertyType)")
             print("")
         }
     }
@@ -522,6 +510,23 @@ final class Generator {
             }
         }
         return nil
+    }
+}
+
+extension Generator {
+    func handleDeprecation(_ deprecated: Bool?) -> String {
+        guard deprecated == true else { return "public" }
+        switch config.deprecation {
+        case .annotate:
+            print("@available(*, deprecated)")
+            return "public"
+        case .comment:
+            comment("deprecated")
+            return "public"
+        case .private:
+            comment("deprecated")
+            return "private"
+        }
     }
 }
 

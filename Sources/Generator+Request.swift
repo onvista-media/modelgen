@@ -19,16 +19,11 @@ extension Generator {
         let (_, successType, _) = try successValues(for: request)
 
         comment(request.operationId + ": " + method.uppercased() + " " + path + " -> " + successType)
-        if request.deprecated == true {
-            if config.annotateDeprecation {
-                print("@available(*, deprecated)")
-            } else {
-                comment("deprecated")
-            }
-        }
+        let access = handleDeprecation(request.deprecated)
+
         let tags = (request.tags + [ config.tag ]).compactMap { $0 }
         let sendable = config.sendable ? ": Sendable" : ""
-        try block("public struct \(name)\(sendable)") {
+        try block("\(access) struct \(name)\(sendable)") {
             print("static let path = \"\(path)\"")
             print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")

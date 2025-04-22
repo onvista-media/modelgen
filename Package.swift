@@ -23,7 +23,7 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
-            path: "Sources",
+            path: "Sources"
 //            plugins: [
 //                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
 //            ]
