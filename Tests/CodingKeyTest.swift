@@ -104,7 +104,7 @@ struct CodingKeyTest {
     """
 
     private let expectedNoCodingKeys = """
-        public struct POD: Codable {
+        public struct POD: Codable, Hashable {
             public let bool: Bool
 
             public let double: Double?
@@ -140,7 +140,7 @@ struct CodingKeyTest {
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
 
-            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"
@@ -160,7 +160,7 @@ struct CodingKeyTest {
         """
 
     private let expectedWithCodingKeys = """
-        public struct POD: Codable {
+        public struct POD: Codable, Hashable {
             public let _42: [Foo]?
 
             public let _Result: _Result?
@@ -206,7 +206,7 @@ struct CodingKeyTest {
                 self._self = try container.decodeIfPresent(Bool.self, forKey: ._self)
             }
 
-            public enum _Result: String, Codable, CaseIterable, UnknownCaseRepresentable {
+            public enum _Result: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"

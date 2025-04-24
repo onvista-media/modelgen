@@ -58,7 +58,7 @@ struct PODTest {
     """
 
     private let expected = """
-        public struct POD: Codable {
+        public struct POD: Codable, Hashable {
             public let bool: Bool
 
             public let double: Double?
@@ -94,7 +94,7 @@ struct PODTest {
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
 
-            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"
@@ -114,7 +114,7 @@ struct PODTest {
         """
 
     private let expectedWithDefaults = """
-        public struct POD: Codable {
+        public struct POD: Codable, Hashable {
             public let bool: Bool
 
             public let double: Double?
@@ -150,7 +150,7 @@ struct PODTest {
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
 
-            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"

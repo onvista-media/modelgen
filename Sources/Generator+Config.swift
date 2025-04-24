@@ -44,6 +44,18 @@ extension Generator {
             self.deprecation = deprecation
         }
 
+        func conformances(_ protocols: [String]) -> String {
+            var protocols = protocols
+            if sendable {
+                protocols.append("Sendable")
+            }
+            if protocols.isEmpty {
+                return ""
+            } else {
+                return ": " + protocols.joined(separator: ", ")
+            }
+        }
+
         static let test = Self(skipHeader: true)
     }
 }

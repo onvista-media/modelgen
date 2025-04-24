@@ -66,7 +66,7 @@ struct InheritanceTest2 {
     """
 
     private let expectedBase = #"""
-    public enum Animal: Codable {
+    public enum Animal: Codable, Hashable {
         case cat(Cat)
         case dog(Dog)
         case animal(AnimalBase)
@@ -118,7 +118,7 @@ struct InheritanceTest2 {
 
     }
 
-    public struct AnimalBase: Codable {
+    public struct AnimalBase: Codable, Hashable {
         public let status: String
 
         public init(status: String) {
@@ -140,7 +140,7 @@ struct InheritanceTest2 {
 
     private let expectedDog =
 #"""
-public struct Dog: Codable {
+public struct Dog: Codable, Hashable {
     // MARK: - inherited properties from Animal
     public let status: String
 
@@ -168,7 +168,7 @@ public struct Dog: Codable {
         self.foobar = try container.decodeIfPresent(Foobar.self, forKey: .foobar)
     }
 
-    public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
+    public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
         case bar = "bar"
         case baz = "baz"
         case foo = "foo"

@@ -133,8 +133,8 @@ final class Generator {
             fatalError("\(modelName) has no allOf values")
         }
 
-        let sendable = config.sendable ? ", Sendable" : ""
-        try block("public struct \(modelName): Codable\(sendable)") {
+        let conformances = config.conformances(["Codable", "Hashable"])
+        try block("public struct \(modelName)\(conformances)") {
             try generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
                 generateProperties($0)
             }
@@ -228,9 +228,11 @@ final class Generator {
     private func generateModelStruct(modelName: String, schema: Schema) throws {
         let properties = try schema.swiftProperties(for: modelName)
 
-        let type = config.classSchemas.contains(modelName) ? "final class" : "struct"
-        let sendable = config.sendable ? ", Sendable" : ""
-        block("public \(type) \(modelName): Codable\(sendable)") {
+        let generateClass = config.classSchemas.contains(modelName)
+
+        let type = generateClass ? "final class" : "struct"
+        let conformances = config.conformances(generateClass ? ["Codable"] : ["Codable", "Hashable"])
+        block("public \(type) \(modelName)\(conformances)") {
             generateProperties(properties)
 
             // init method
@@ -342,8 +344,8 @@ final class Generator {
         }
 
         let access = handleDeprecation(schema.deprecated)
-        let sendable = config.sendable ? ", Sendable" : ""
-        block("\(access) enum \(modelName): Codable\(sendable)") {
+        let conformances = config.conformances(["Codable", "Hashable"])
+        block("\(access) enum \(modelName)\(conformances)") {
             // enum cases
             for dc in discriminatorCases {
                 print("case \(dc.enumCase)(\(dc.mappedModel))")
@@ -457,8 +459,8 @@ final class Generator {
         }
 
         let sortedCases = Set(cases).sorted(by: <)
-        let sendable = config.sendable ? ", Sendable" : ""
-        block("public enum \(name): String, Codable, CaseIterable, UnknownCaseRepresentable\(sendable)") {
+        let conformances = config.conformances(["String", "Codable", "CaseIterable", "UnknownCaseRepresentable", "Hashable"])
+        block("public enum \(name)\(conformances)") {
             for c in sortedCases {
                 let name = c.camelCased()
                 print(#"case \#(SwiftKeywords.safe(name)) = "\#(c)""#)

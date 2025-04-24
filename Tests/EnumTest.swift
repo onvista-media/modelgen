@@ -28,7 +28,7 @@ struct EnumTest {
     """
 
     private let expected = """
-    public enum Enum: String, Codable, CaseIterable, UnknownCaseRepresentable {
+    public enum Enum: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
         case _2case = "2CASE"
         case case1 = "CASE1"
         case _public = "PUBLIC"

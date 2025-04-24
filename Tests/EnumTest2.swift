@@ -39,7 +39,7 @@ struct EnumTest2 {
     """
 
     private let expected = """
-    public struct Enum: Codable {
+    public struct Enum: Codable, Hashable {
         public let aEnum: AEnum?
 
         public let bEnum: BEnum?
@@ -55,7 +55,7 @@ struct EnumTest2 {
             self.bEnum = try container.decodeIfPresent(BEnum.self, forKey: .bEnum)
         }
 
-        public enum AEnum: String, Codable, CaseIterable, UnknownCaseRepresentable {
+        public enum AEnum: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
             case plugh = "plugh"
             case xyzzy = "xyzzy"
 
@@ -67,7 +67,7 @@ struct EnumTest2 {
             }
         }
 
-        public enum BEnum: String, Codable, CaseIterable, UnknownCaseRepresentable {
+        public enum BEnum: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
             case bar = "bar"
             case baz = "baz"
             case foo = "foo"

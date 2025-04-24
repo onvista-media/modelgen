@@ -171,8 +171,8 @@ extension Generator {
     }
 
     private func generateResponseEnum(request: Request) throws {
-        let sendable = config.sendable ? ": Sendable" : ""
-        try block("public enum Response\(sendable)") {
+        let conformances = config.conformances([])
+        try block("public enum Response\(conformances)") {
             var didGenerateOk = false
             for (code, response) in request.sortedResponses {
                 if code == "204" {
