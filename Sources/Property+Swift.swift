@@ -48,9 +48,9 @@ extension Property {
                 case .array:
                     return .builtInArray("[\(type.name)]")
                 case .scalar:
-                    return .builtInArray("\(type.name)")
-                default:
-                    fatalError("\(modelName): unsupported q=\(type.qualifier) for array \(propertyName)")
+                    return .builtInArray(type.name)
+                case .dictionary:
+                    return .builtInArray(type.name)
                 }
             case .ref(let ref):
                 let type = ref.swiftType(qualifier: .array)
