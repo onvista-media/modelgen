@@ -1,8 +1,7 @@
 //
-//  File.swift
-//  
+//  EnumTest2.swift
 //
-//  Created by Gereon Steffens on 19.06.24.
+//  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
 import Foundation

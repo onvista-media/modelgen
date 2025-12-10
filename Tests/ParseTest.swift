@@ -1,8 +1,7 @@
 //
 //  ParseTest.swift
 //  
-//
-//  Created by Gereon Steffens on 03.05.23.
+//  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
 import Foundation
