@@ -1,8 +1,7 @@
 //
 //  Generator+Request.swift
 //  
-//
-//  Created by Gereon Steffens on 22.08.23.
+//  Copyright © 2024 onvista media GmbH. All rights reserved.
 //
 
 import Foundation
@@ -101,7 +100,7 @@ extension Generator {
 
         var initParameters = params.map { name, type in
             let param = "\(name.camelCased()): \(type.propertyType)"
-            if defaultValues.contains(name) {
+            if defaultValues.contains(name) && ["String", "String?"].contains(type.propertyType) {
                 return "\(param) = DefaultValues.\(name)"
             }
             return param

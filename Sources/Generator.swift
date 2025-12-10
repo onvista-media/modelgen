@@ -39,7 +39,8 @@ final class Generator {
         } else if schema.enumCases != nil {
             generateSimpleEnum(modelName: modelName, schema: schema)
         } else {
-            fatalError("\(modelName): don't know how to handle this schema")
+            try generateTypeAlias(modelName: modelName, schema: schema)
+            // fatalError("\(modelName): don't know how to handle this schema")
         }
     }
 
@@ -486,11 +487,26 @@ final class Generator {
         }
     }
 
+    // MARK: - type alias
+    private func generateTypeAlias(modelName: String, schema: Schema) throws {
+        let prop = Property(
+            type: schema.type,
+            description: schema.description,
+            format: nil,
+            items: nil,
+            deprecated: nil,
+            enumCases: nil,
+            additionalProperties: nil
+        )
+        let type = try prop.swiftType(for: modelName, "")
+        print("public typealias \(modelName) = \(type.name)")
+    }
+
     private func generateParameters(_ properties: [SwiftProperty], defaultValues: [String]) {
         let params = properties
             .map {
                 let param = "\($0.name): \($0.type.propertyType)"
-                if defaultValues.contains($0.name) {
+                if defaultValues.contains($0.name) && ["String", "String?"].contains($0.type.propertyType)  {
                     return "\(param) = DefaultValues.\($0.name)"
                 }
                 return param
