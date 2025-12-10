@@ -100,7 +100,7 @@ struct ModelGen: ParsableCommand {
                         let generator = Generator(spec: spec, config: config)
                         do {
                             try generator.generate(path: path, method: method, request: request)
-                            try output(generator.buffer, to: "\(requestOutput)/\(name)Request.swift")
+                            try output(generator.buffer, to: requestOutput, name: name, suffix: "Request.swift")
                         } catch {
                             Swift.print("no response type for \(name)Request could be generated - skipping")
                         }
@@ -117,7 +117,7 @@ struct ModelGen: ParsableCommand {
                 let generator = Generator(spec: spec, config: config)
                 do {
                     try generator.generate(modelName: name)
-                    try output(generator.buffer, to: "\(modelOutput)/\(name).swift")
+                    try output(generator.buffer, to: modelOutput, name: name, suffix: ".swift")
                 } catch {
                     let conformances = config.conformances(["Codable", "Hashable"])
                     Swift.print("can't generate type(s) necessary for \(name) - creating empty struct")
@@ -130,20 +130,57 @@ struct ModelGen: ParsableCommand {
                         public static func make() -> Self { Self() }
                     }
                     """
-                    try output(content, to: "\(modelOutput)/\(name).swift")
+                    try output(content, to: modelOutput, name: name, suffix: ".swift")
                 }
             }
         }
     }
 
-    private func output(_ content: String, to name: String) throws {
+    private func output(_ content: String, to directory: String, name: String, suffix: String) throws {
+        let (dir, name) = splitName(name)
+
+        let fullName: String
+        if let dir {
+            let dirPath = "\(directory)/\(dir)"
+            let fm = FileManager.default
+            if !fm.fileExists(atPath: dirPath) {
+                _ = try fm.createDirectory(atPath: dirPath, withIntermediateDirectories: true)
+            }
+            fullName = "\(dirPath)/\(name)\(suffix)"
+        } else {
+            fullName = "\(directory)/\(name)\(suffix)"
+        }
+
         if stdout {
             print(content)
         } else {
             let data = content.data(using: .utf8)!
 
-            let url = URL(fileURLWithPath: name)
+            let url = URL(fileURLWithPath: fullName)
             try data.write(to: url, options: .atomic)
         }
+    }
+
+    private func splitName(_ name: String) -> (String?, String) {
+        let regex = /([A-Z][a-z]+|[0-9]+|[A-Z]+?(?=[A-Z][a-z]|[0-9]|$))/
+        let ranges = name.ranges(of: regex)
+
+        let words = ranges.map { String(name[$0]) }
+
+        if words.isEmpty {
+            return (nil, "\(name)")
+        }
+
+        if words.count == 1 {
+            return (nil, String(words[0]))
+        }
+
+        // handle "V1" prefix
+        if words.count > 2, words[0] == "V", Int(words[1]) != nil {
+            let dir = words[2]
+            let name = words.joined()
+            return (dir, name)
+        }
+        return (words[0], words.joined())
     }
 }
