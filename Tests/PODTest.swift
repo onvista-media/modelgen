@@ -129,7 +129,7 @@ struct PODTest {
 
             public let string: String?
 
-            public init(bool: Bool, double: Double?, foobar: Foobar? = DefaultValues.foobar, ints: [Int], lossy: [Foo]?, ref: Object?, string: String?) {
+            public init(bool: Bool, double: Double?, foobar: Foobar?, ints: [Int], lossy: [Foo]?, ref: Object?, string: String? = DefaultValues.string) {
                 self.bool = bool
                 self.double = double
                 self.foobar = foobar
@@ -181,7 +181,7 @@ struct PODTest {
     @Test("test POD with defaults")
     func testPODWithDefaults() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
-        let generator = Generator(spec: spec, config: .init(defaultValues: ["foobar"], skipHeader: true))
+        let generator = Generator(spec: spec, config: .init(defaultValues: ["string"], skipHeader: true))
         try generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         expectNoDifference(output, expectedWithDefaults)
