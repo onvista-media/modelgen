@@ -15,6 +15,7 @@ extension Generator {
         let excludes: [String]
         let includes: [String]
         let imports: [String]
+        let hashable: [String]
         let defaultValues: [String]
         let classSchemas: Set<String>
         let tag: String?
@@ -26,6 +27,7 @@ extension Generator {
             excludes: [String] = [],
             includes: [String] = [],
             imports: [String] = [],
+            hashable: [String] = [],
             defaultValues: [String] = [],
             classSchemas: Set<String> = [],
             tag: String? = nil,
@@ -36,6 +38,7 @@ extension Generator {
             self.excludes = excludes
             self.includes = includes
             self.imports = imports
+            self.hashable = hashable
             self.defaultValues = defaultValues
             self.classSchemas = classSchemas
             self.tag = tag
@@ -44,10 +47,13 @@ extension Generator {
             self.deprecation = deprecation
         }
 
-        func conformances(_ protocols: [String]) -> String {
+        func conformances(for name: String, _ protocols: [String]) -> String {
             var protocols = protocols
             if sendable {
                 protocols.append("Sendable")
+            }
+            if hashable.contains(name) {
+                protocols.append("Hashable")
             }
             if protocols.isEmpty {
                 return ""

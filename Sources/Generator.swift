@@ -73,7 +73,7 @@ final class Generator {
             fatalError("\(modelName) has no enum values")
         }
 
-        generateEnum(name: modelName, cases: cases)
+        generateEnum(modelName: modelName, name: modelName, cases: cases)
     }
 
     private func joinAllProperties(for modelName: String, allOf: [RefOrSchema], parentSchema: Schema) throws -> [SwiftProperty] {
@@ -134,7 +134,7 @@ final class Generator {
             fatalError("\(modelName) has no allOf values")
         }
 
-        let conformances = config.conformances(["Codable", "Hashable"])
+        let conformances = config.conformances(for: modelName, ["Codable"])
         try block("public struct \(modelName)\(conformances)") {
             try generateAllOf(for: modelName, allOf: allOf, addComment: true, parentSchema: schema) {
                 generateProperties($0)
@@ -176,7 +176,7 @@ final class Generator {
 
             for refOrSchema in allOf {
                 if case .schema(let schema) = refOrSchema {
-                    generateTypeEnums(schema: schema)
+                    generateTypeEnums(modelName: modelName, schema: schema)
                 }
             }
 
@@ -232,7 +232,7 @@ final class Generator {
         let generateClass = config.classSchemas.contains(modelName)
 
         let type = generateClass ? "final class" : "struct"
-        let conformances = config.conformances(generateClass ? ["Codable"] : ["Codable", "Hashable"])
+        let conformances = config.conformances(for: modelName, ["Codable"])
         block("public \(type) \(modelName)\(conformances)") {
             generateProperties(properties)
 
@@ -251,7 +251,7 @@ final class Generator {
             print("")
             generateInitFromDecoder(properties)
 
-            generateTypeEnums(schema: schema)
+            generateTypeEnums(modelName: modelName, schema: schema)
 
             // make method
             generateMakeMethod(properties)
@@ -345,7 +345,7 @@ final class Generator {
         }
 
         let access = handleDeprecation(schema.deprecated)
-        let conformances = config.conformances(["Codable", "Hashable"])
+        let conformances = config.conformances(for: modelName, ["Codable"])
         block("\(access) enum \(modelName)\(conformances)") {
             // enum cases
             for dc in discriminatorCases {
@@ -429,7 +429,7 @@ final class Generator {
     }
 
     // MARK: - enums
-    private func generateTypeEnums(schema: Schema) {
+    private func generateTypeEnums(modelName: String, schema: Schema) {
         guard let properties = schema.properties else {
             return
         }
@@ -449,18 +449,20 @@ final class Generator {
 
             if let cases {
                 print("")
-                generateEnum(name: enumName, cases: cases)
+                generateEnum(modelName: modelName, name: enumName, cases: cases)
             }
         }
     }
 
-    private func generateEnum(name: String, cases: [String]) {
+    private func generateEnum(modelName: String, name: String, cases: [String]) {
         if cases.isEmpty {
             fatalError("enum \(name) has no cases")
         }
 
         let sortedCases = Set(cases).sorted(by: <)
-        let conformances = config.conformances(["String", "Codable", "CaseIterable", "UnknownCaseRepresentable", "Hashable"])
+        // if parent is hashable, we need to be hashable as well
+        let check = config.hashable.contains(modelName) ? modelName : name
+        let conformances = config.conformances(for: check, ["String", "Codable", "CaseIterable", "UnknownCaseRepresentable"])
         block("public enum \(name)\(conformances)") {
             for c in sortedCases {
                 let name = c.camelCased()

@@ -10,7 +10,7 @@ import Testing
 @testable import modelgen
 
 // test inheritance with a string as the discriminator
-@Suite("Interitance test 2")
+@Suite("Inheritance test 2")
 struct InheritanceTest2 {
     private let spec = """
     {
@@ -66,7 +66,7 @@ struct InheritanceTest2 {
     """
 
     private let expectedBase = #"""
-    public enum Animal: Codable, Hashable {
+    public enum Animal: Codable {
         case cat(Cat)
         case dog(Dog)
         case animal(AnimalBase)
@@ -118,7 +118,7 @@ struct InheritanceTest2 {
 
     }
 
-    public struct AnimalBase: Codable, Hashable {
+    public struct AnimalBase: Codable {
         public let status: String
 
         public init(status: String) {
@@ -140,7 +140,7 @@ struct InheritanceTest2 {
 
     private let expectedDog =
 #"""
-public struct Dog: Codable, Hashable {
+public struct Dog: Codable {
     // MARK: - inherited properties from Animal
     public let status: String
 
@@ -168,7 +168,7 @@ public struct Dog: Codable, Hashable {
         self.foobar = try container.decodeIfPresent(Foobar.self, forKey: .foobar)
     }
 
-    public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
+    public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
         case bar = "bar"
         case baz = "baz"
         case foo = "foo"

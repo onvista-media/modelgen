@@ -234,6 +234,91 @@ public struct GetStatusRequest {
 }
 """#
 
+    private let expectedOutputHashableSendable = #"""
+// getStatus: GET /status -> Status
+public struct GetStatusRequest: Sendable, Hashable {
+    static let path = "/status"
+    public let tags = ["/status", "testTag"]
+    public let urlRequest: URLRequest
+    @Dependency(\.jsonEncoder) var jsonEncoder
+    @Dependency(\.jsonDecoder) var jsonDecoder
+    @Dependency(\.httpClient) var httpClient
+
+    public init(foo: String, useCache: Bool = true) {
+        let path = Self.path
+
+        var queryItems = [URLQueryItem?]()
+        queryItems.append(URLQueryItem(name: "foo", value: foo))
+
+        // build URL
+        var components = URLComponents(string: path)!
+        components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }
+
+        // build request
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "GET"
+        request.cachePolicy = useCache ? .useProtocolCachePolicy : .reloadIgnoringLocalAndRemoteCacheData
+
+        self.urlRequest = request
+    }
+
+    public enum Response: Sendable, Hashable {
+        case ok(Status)
+
+        case undocumented(Int, Data)
+        case error(Error)
+        case invalid(Error)
+    }
+
+    // return decoded response, raw data and HTTP headers
+    public func execute() async -> (Response, Data?, HTTPURLResponse?) {
+        let data: Data
+        let response: HTTPURLResponse
+        do {
+            (data, response) = try await httpClient.execute(urlRequest: urlRequest, tags: tags)
+        }
+        catch {
+            return (.error(error), nil, nil)
+        }
+        do {
+            switch response.statusCode {
+                case 200: return (.ok(try jsonDecoder.decode(Status.self, from: data)), data, response)
+                default: return (.undocumented(response.statusCode, data), data, response)
+            }
+        }
+        catch {
+            return (.invalid(error), data, response)
+        }
+    }
+
+    // return Status or nil
+    public func get() async -> Status? {
+        let (response, _, _) = await execute()
+        switch response {
+            case .ok(let obj): return obj
+            default: return nil
+        }
+    }
+
+    // return Result<Status, APIError>
+    public func result() async -> Result<Status, APIError> {
+        let (response, data, urlResponse) = await execute()
+        guard let data, let urlResponse else {
+            if case .error(let error) = response {
+                return .failure(.urlError(error))
+            }
+            return .failure(.unexpected)
+        }
+        switch response {
+            case .ok(let obj): return .success(obj)
+            case .error(let error): return .failure(.urlError(error))
+            case .invalid(let error): return .failure(.invalid(error, urlResponse, data))
+            case .undocumented(_, let data): return .failure(.undocumented(urlResponse, data))
+        }
+    }
+}
+"""#
+
     @Test("test request")
     func testRequest() throws {
         let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
@@ -261,5 +346,14 @@ public struct GetStatusRequest {
         #expect(throws: TypeError.self) {
             try generator.generate(path: "/status", method: "GET", request: req)
         }
+    }
+
+    @Test("test request hashable+sendable")
+    func testRequestSendableHashable() throws {
+        let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
+        let generator = Generator(spec: spec, config: .init(hashable: ["GetStatusRequest"], tag: "testTag", sendable: true, skipHeader: true))
+        let req = try #require(spec.paths?["/status"]?["get"])
+        try generator.generate(path: "/status", method: "GET", request: req)
+        expectNoDifference(String(generator.buffer.dropLast(1)), expectedOutputHashableSendable)
     }
 }

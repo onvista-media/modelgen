@@ -58,7 +58,7 @@ struct PODTest {
     """
 
     private let expected = """
-        public struct POD: Codable, Hashable {
+        public struct POD: Codable {
             public let bool: Bool
 
             public let double: Double?
@@ -94,7 +94,7 @@ struct PODTest {
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
 
-            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"
@@ -114,7 +114,7 @@ struct PODTest {
         """
 
     private let expectedWithDefaults = """
-        public struct POD: Codable, Hashable {
+        public struct POD: Codable {
             public let bool: Bool
 
             public let double: Double?
@@ -150,7 +150,7 @@ struct PODTest {
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
 
-            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"
@@ -163,6 +163,62 @@ struct PODTest {
                 }
             }
 
+            public static func make(bool: Bool = false, double: Double? = nil, foobar: Foobar? = nil, ints: [Int] = [], lossy: [Foo]? = nil, ref: Object? = nil, string: String? = nil) -> Self {
+                self.init(bool: bool, double: double, foobar: foobar, ints: ints, lossy: lossy, ref: ref, string: string)
+            }
+        }
+        """
+
+    private let expectedHashable = """
+        public struct POD: Codable, Hashable {
+            public let bool: Bool
+        
+            public let double: Double?
+        
+            public let foobar: Foobar?
+        
+            public let ints: [Int]
+        
+            public let lossy: [Foo]?
+        
+            public let ref: Object?
+        
+            public let string: String?
+        
+            public init(bool: Bool, double: Double?, foobar: Foobar?, ints: [Int], lossy: [Foo]?, ref: Object?, string: String?) {
+                self.bool = bool
+                self.double = double
+                self.foobar = foobar
+                self.ints = ints
+                self.lossy = lossy
+                self.ref = ref
+                self.string = string
+            }
+        
+            public init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.bool = try container.decode(Bool.self, forKey: .bool)
+                self.double = try container.decodeIfPresent(Double.self, forKey: .double)
+                self.foobar = try container.decodeIfPresent(Foobar.self, forKey: .foobar)
+                self.ints = try container.decode([Int].self, forKey: .ints)
+                self.lossy = try container.decodeIfPresent(LossyDecodableArray<Foo>.self, forKey: .lossy)?.elements
+                self.ref = try container.decodeIfPresent(Object.self, forKey: .ref)
+                self.string = try container.decodeIfPresent(String.self, forKey: .string)
+            }
+        
+            public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
+                case bar = "bar"
+                case baz = "baz"
+                case foo = "foo"
+        
+                case _unknownCase
+                public static let unknownCase = Self._unknownCase
+        
+                public static func make() -> Self {
+                    ._unknownCase
+                }
+            }
+        
             public static func make(bool: Bool = false, double: Double? = nil, foobar: Foobar? = nil, ints: [Int] = [], lossy: [Foo]? = nil, ref: Object? = nil, string: String? = nil) -> Self {
                 self.init(bool: bool, double: double, foobar: foobar, ints: ints, lossy: lossy, ref: ref, string: string)
             }
@@ -185,5 +241,14 @@ struct PODTest {
         try generator.generate(modelName: "POD")
         let output = String(generator.buffer.dropLast(1))
         expectNoDifference(output, expectedWithDefaults)
+    }
+
+    @Test("test POD with hashable")
+    func testPODWithHashable() throws {
+        let spec = try JSONDecoder().decode(OpenApiSpec.self, from: spec.data(using: .utf8)!)
+        let generator = Generator(spec: spec, config: .init(hashable: ["POD"], skipHeader: true))
+        try generator.generate(modelName: "POD")
+        let output = String(generator.buffer.dropLast(1))
+        expectNoDifference(output, expectedHashable)
     }
 }

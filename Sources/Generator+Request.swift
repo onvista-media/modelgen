@@ -21,8 +21,8 @@ extension Generator {
         let access = handleDeprecation(request.deprecated)
 
         let tags = (request.tags + [ config.tag ]).compactMap { $0 }
-        let sendable = config.sendable ? ": Sendable" : ""
-        try block("\(access) struct \(name)\(sendable)") {
+        let conformances = config.conformances(for: name, [])
+        try block("\(access) struct \(name)\(conformances)") {
             print("static let path = \"\(path)\"")
             print("public let tags = \(tags)")
             print("public let urlRequest: URLRequest")
@@ -56,7 +56,7 @@ extension Generator {
                 try generateInit(method: method, request: request, parameters: parameters, defaultValues: config.defaultValues, bodyType: bodyType)
 
                 print("")
-                try generateResponseEnum(request: request)
+                try generateResponseEnum(name: name, request: request)
 
                 print("")
                 try generateExecute(request: request)
@@ -169,8 +169,8 @@ extension Generator {
         }
     }
 
-    private func generateResponseEnum(request: Request) throws {
-        let conformances = config.conformances([])
+    private func generateResponseEnum(name: String, request: Request) throws {
+        let conformances = config.conformances(for: name, [])
         try block("public enum Response\(conformances)") {
             var didGenerateOk = false
             for (code, response) in request.sortedResponses {

@@ -68,7 +68,7 @@ struct ArrayOfArrayTest {
 
     private let expectedResult =
 #"""
-public struct ArrayItem: Codable, Hashable {
+public struct ArrayItem: Codable {
     // MARK: - inherited properties from Parent
     public let type: String
 
