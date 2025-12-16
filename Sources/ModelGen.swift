@@ -11,7 +11,7 @@ extension Generator.DeprecationHandling: ExpressibleByArgument { }
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.24"
+    static let version = "v0.1.25"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
@@ -35,6 +35,9 @@ struct ModelGen: ParsableCommand {
 
     @Option(name: .long, help: "list of additional modules to import")
     var imports: String?
+
+    @Option(name: .long, help: "list of schemas that should conform to `Hashable`")
+    var hashable: String?
 
     @Option(name: .long, help: "tag to add to each generated `tags` array")
     var addTag: String?
@@ -81,6 +84,7 @@ struct ModelGen: ParsableCommand {
             excludes: (self.exclude ?? "").split(separator: ",").map { String($0) },
             includes: (self.include ?? "").split(separator: ",").map { String($0) },
             imports: (self.imports ?? "").split(separator: ",").map { String($0) },
+            hashable: (self.hashable ?? "").split(separator: ",").map { String($0) },
             defaultValues: (self.defaultValues ?? "").split(separator: ",").map { String($0) },
             classSchemas: Set((self.classSchemas ?? "").split(separator: ",").map { String($0) }),
             tag: addTag,
@@ -119,7 +123,7 @@ struct ModelGen: ParsableCommand {
                     try generator.generate(modelName: name)
                     try output(generator.buffer, to: modelOutput, name: name, suffix: ".swift")
                 } catch {
-                    let conformances = config.conformances(["Codable", "Hashable"])
+                    let conformances = config.conformances(for: name, ["Codable"])
                     Swift.print("can't generate type(s) necessary for \(name) - creating empty struct")
                     let content = """
                     //
