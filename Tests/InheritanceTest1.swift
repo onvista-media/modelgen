@@ -57,7 +57,7 @@ struct InheritanceTest1 {
     """
 
     private let expectedBase = #"""
-    public enum Animal: Codable, Hashable {
+    public enum Animal: Codable {
         case cat(Cat)
         case dog(Dog)
 
@@ -107,7 +107,7 @@ struct InheritanceTest1 {
 
     private let expectedDog =
 #"""
-public struct Dog: Codable, Hashable {
+public struct Dog: Codable {
     // MARK: - inherited properties from Animal
     public let status: AnimalType
 

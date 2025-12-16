@@ -9,7 +9,7 @@ import CustomDump
 import Testing
 @testable import modelgen
 
-@Suite("EnumTests")
+@Suite("Enum Tests")
 struct EnumTest {
     private let spec = """
     {
@@ -28,7 +28,7 @@ struct EnumTest {
     """
 
     private let expected = """
-    public enum Enum: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
+    public enum Enum: String, Codable, CaseIterable, UnknownCaseRepresentable {
         case _2case = "2CASE"
         case case1 = "CASE1"
         case _public = "PUBLIC"

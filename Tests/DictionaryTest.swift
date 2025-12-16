@@ -45,7 +45,7 @@ struct DictionaryTest {
     """
 
     private let expected = """
-        public struct Dictionary: Codable, Hashable {
+        public struct Dictionary: Codable {
             public let errors: [[String: String]]
 
             public let inlineMessage: String
