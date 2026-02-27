@@ -149,6 +149,7 @@ extension Generator {
             print(#"\#(keyword) components = URLComponents(string: path)!"#)
             if !queryParams.isEmpty {
                 print("components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }")
+                print(#"components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2b")"#)
             }
 
             print("")
