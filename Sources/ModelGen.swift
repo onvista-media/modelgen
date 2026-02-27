@@ -11,7 +11,7 @@ extension Generator.DeprecationHandling: ExpressibleByArgument { }
 
 @main
 struct ModelGen: ParsableCommand {
-    static let version = "v0.1.25"
+    static let version = "v0.1.26"
 
     static let configuration = CommandConfiguration(commandName: "modelgen", version: version)
 
