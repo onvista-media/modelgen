@@ -83,6 +83,7 @@ public struct GetStatusRequest {
         // build URL
         var components = URLComponents(string: path)!
         components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2b")
 
         // build request
         var request = URLRequest(url: components.url!)
@@ -168,6 +169,7 @@ public struct GetStatusRequest {
         // build URL
         var components = URLComponents(string: path)!
         components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2b")
 
         // build request
         var request = URLRequest(url: components.url!)
@@ -253,6 +255,7 @@ public struct GetStatusRequest: Sendable, Hashable {
         // build URL
         var components = URLComponents(string: path)!
         components.queryItems = queryItems.compactMap { $0 }.filter { $0.value != nil }
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2b")
 
         // build request
         var request = URLRequest(url: components.url!)
