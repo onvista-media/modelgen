@@ -15,6 +15,17 @@ extension Generator {
             generateFileHeader(modelName: name, schema: nil, imports: imports.sorted(by: <))
         }
 
+        if request.summary != nil || request.description != nil {
+            print("")
+            if let summary = request.summary {
+                comment(summary)
+            }
+            if let description = request.description {
+                comment(description)
+            }
+            print("")
+        }
+
         let (_, successType, _) = try successValues(for: request)
 
         comment(request.operationId + ": " + method.uppercased() + " " + path + " -> " + successType)
