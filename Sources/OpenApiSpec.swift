@@ -21,6 +21,8 @@ struct Request: Decodable {
     let requestBody: RequestBody?
     let responses: [String: Response]
     let deprecated: Bool?
+    let summary: String?
+    let description: String?
 }
 
 struct RequestBody: Decodable {
