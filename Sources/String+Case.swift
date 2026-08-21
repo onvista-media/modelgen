@@ -26,6 +26,8 @@ extension String {
         let str = self
             .replacingOccurrences(of: ".", with: "_")
             .replacingOccurrences(of: "-", with: "_")
+            .replacingOccurrences(of: ",", with: "_")
+            .replacingOccurrences(of: " ", with: "_")
 
         guard str.contains("_") else {
             if str.uppercased() == str {

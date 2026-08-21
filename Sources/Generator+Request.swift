@@ -42,20 +42,44 @@ extension Generator {
             print(#"@Dependency(\.httpClient) var httpClient"#)
 
             var bodyType: SwiftType?
-            if let body = request.requestBody, case .ref(let ref) = body.content["application/json"]?.schema {
-                bodyType = ref.swiftType()
+            if let body = request.requestBody {
+                if case .ref(let ref) = body.content["application/json"]?.schema {
+                    bodyType = ref.swiftType()
+                } else if case .ref(let ref) = body.content["*/*"]?.schema {
+                    bodyType = ref.swiftType()
+                }
             }
             if let bodyType {
                 print("private let body: \(bodyType.propertyType)")
             }
 
+            var generatedEnums = Set<String>()
             print("")
             let enumParams = (request.parameters ?? []).filter { $0.schema.enumCases != nil }
             for enumParam in enumParams.sorted(by: { $0.name < $1.name }) {
+                generatedEnums.insert(enumParam.name)
                 block("public enum \(SwiftKeywords.safe(enumParam.name.uppercasedFirst())): String") {
                     let sortedCases = Set(enumParam.schema.enumCases ?? []).sorted()
                     for enumCase in sortedCases {
                         print("case \(SwiftKeywords.safe(enumCase))")
+                    }
+                }
+                print("")
+            }
+
+            let itemEnumParams = (request.parameters ?? []).filter {
+                if case .property = $0.schema.items, !generatedEnums.contains($0.name) {
+                    return true
+                }
+                return false
+            }
+            for itemEnumParam in itemEnumParams.sorted(by: { $0.name < $1.name }) {
+                if case .property(let prop) = itemEnumParam.schema.items, let cases = prop.enumCases, !cases.isEmpty {
+                    block("public enum \(SwiftKeywords.safe(itemEnumParam.name.uppercasedFirst())): String") {
+                        let sortedCases = cases.sorted()
+                        for enumCase in sortedCases {
+                            print("case \(SwiftKeywords.safe(enumCase))")
+                        }
                     }
                 }
                 print("")

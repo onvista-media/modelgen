@@ -54,7 +54,4 @@ conditional_returns_on_newline:
 
 identifier_name:
   min_length: 3
-  excluded:
-  - dc
-  - c
-  - in
+  excluded: ["c", "dc", "`in`", "fm"]
