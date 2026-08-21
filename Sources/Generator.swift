@@ -498,7 +498,7 @@ final class Generator {
             items: nil,
             deprecated: nil,
             enumCases: nil,
-            additionalProperties: nil
+            additionalProperties: schema.additionalProperties
         )
         let type = try prop.swiftType(for: modelName, "")
         print("public typealias \(modelName) = \(type.name)")
@@ -508,7 +508,7 @@ final class Generator {
         let params = properties
             .map {
                 let param = "\($0.name): \($0.type.propertyType)"
-                if defaultValues.contains($0.name) && ["String", "String?"].contains($0.type.propertyType)  {
+                if defaultValues.contains($0.name) && ["String", "String?"].contains($0.type.propertyType) {
                     return "\(param) = DefaultValues.\($0.name)"
                 }
                 return param

@@ -59,16 +59,17 @@ struct Schema: Decodable {
     let discriminator: Discriminator?
     let enumCases: [String]?
     let deprecated: Bool?
+    let additionalProperties: RefOrProperty?
 
     enum CodingKeys: String, CodingKey {
-        case type, properties, required, allOf, description, discriminator, deprecated
+        case type, properties, required, allOf, description, discriminator, deprecated, additionalProperties
         case enumCases = "enum"
     }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.type = try container.decode(String.self, forKey: .type)
-        self.properties = try container.decodeIfPresent([String : RefOrProperty].self, forKey: .properties)
+        self.properties = try container.decodeIfPresent([String: RefOrProperty].self, forKey: .properties)
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
         self.allOf = try container.decodeIfPresent([RefOrSchema].self, forKey: .allOf)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
@@ -79,6 +80,7 @@ struct Schema: Decodable {
         } catch {
             self.enumCases = nil
         }
+        self.additionalProperties = try container.decodeIfPresent(RefOrProperty.self, forKey: .additionalProperties)
     }
 }
 

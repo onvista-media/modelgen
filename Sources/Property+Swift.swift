@@ -87,13 +87,14 @@ extension Property {
                     return .builtInDictionary("[String: \(refType.propertyType)]")
                 }
             } else {
-                throw TypeError.unknownPropertyType
+                return .custom("[String: AnyCodable]")
             }
 
         case "string":
             switch format {
             case .none: return .builtInScalar("String")
             case "date-time": return .builtInScalar("Date")
+            case "uri": return .builtInScalar("URL")
             default: fatalError("\(modelName): unknown string format '\(format!)' for \(propertyName)")
             }
 
