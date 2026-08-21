@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
-        // .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.58.2"),
+        .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.65.0"),
         .package(url: "https://github.com/pointfreeco/swift-custom-dump", from: "1.3.0")
     ],
     targets: [
@@ -23,10 +23,10 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
-            path: "Sources"
-//            plugins: [
-//                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
-//            ]
+            path: "Sources",
+            plugins: [
+                .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
+            ]
         ),
         .testTarget(
             name: "modelgenTests",
