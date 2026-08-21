@@ -172,19 +172,19 @@ struct PODTest {
     private let expectedHashable = """
         public struct POD: Codable, Hashable {
             public let bool: Bool
-        
+
             public let double: Double?
-        
+
             public let foobar: Foobar?
-        
+
             public let ints: [Int]
-        
+
             public let lossy: [Foo]?
-        
+
             public let ref: Object?
-        
+
             public let string: String?
-        
+
             public init(bool: Bool, double: Double?, foobar: Foobar?, ints: [Int], lossy: [Foo]?, ref: Object?, string: String?) {
                 self.bool = bool
                 self.double = double
@@ -194,7 +194,7 @@ struct PODTest {
                 self.ref = ref
                 self.string = string
             }
-        
+
             public init(from decoder: Decoder) throws {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
                 self.bool = try container.decode(Bool.self, forKey: .bool)
@@ -205,20 +205,20 @@ struct PODTest {
                 self.ref = try container.decodeIfPresent(Object.self, forKey: .ref)
                 self.string = try container.decodeIfPresent(String.self, forKey: .string)
             }
-        
+
             public enum Foobar: String, Codable, CaseIterable, UnknownCaseRepresentable, Hashable {
                 case bar = "bar"
                 case baz = "baz"
                 case foo = "foo"
-        
+
                 case _unknownCase
                 public static let unknownCase = Self._unknownCase
-        
+
                 public static func make() -> Self {
                     ._unknownCase
                 }
             }
-        
+
             public static func make(bool: Bool = false, double: Double? = nil, foobar: Foobar? = nil, ints: [Int] = [], lossy: [Foo]? = nil, ref: Object? = nil, string: String? = nil) -> Self {
                 self.init(bool: bool, double: double, foobar: foobar, ints: ints, lossy: lossy, ref: ref, string: string)
             }
